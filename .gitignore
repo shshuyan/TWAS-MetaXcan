@@ -6,3 +6,4 @@ summary-gwas-imputation/
 *.log
 __pycache__/
 results/*/spredixcan_*_all.tsv.gz
+logs/

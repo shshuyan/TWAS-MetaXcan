@@ -97,6 +97,9 @@ def standardize_chunk(df, cols, inp):
     nc = num("n_cases")
     out["NC"] = nc.where(nc.notna(), inp.get("n_cases") or np.nan)
 
+    flag = inp.get("exclude_flag")  # e.g. Pan-UKBB low_confidence_EUR == true
+    if flag and flag in df.columns:
+        out = out[~df[flag].astype(str).str.lower().isin(["true", "1", "yes"])]
     ok = (out.pos.notna() & out.chrom.isin(CONTIGS) & out.ea.str.fullmatch(r"[ACGT]+")
           & out.nea.str.fullmatch(r"[ACGT]+") & (out.ea != out.nea) & out.LP.notna())
     return out[ok]
@@ -125,7 +128,7 @@ def write_vcf(cfg, chunks, out_path, build, meta):
     os.makedirs(os.path.dirname(out_path), exist_ok=True)
     tmp = out_path + ".tmp.vcf.gz"
     tmpdir = os.path.dirname(out_path) + "/sort_tmp"
-    sort = subprocess.Popen(f"{bcftools(cfg)} sort -m 2G -T {tmpdir} -Oz -o {tmp} -W=tbi",
+    sort = subprocess.Popen(f"{bcftools(cfg)} sort -m 1G -T {tmpdir} -Oz -o {tmp} -W=tbi",
                             shell=True, stdin=subprocess.PIPE, text=True, executable="/bin/bash")
     sort.stdin.write(vcf_header(cfg.trait_id, build, meta))
     n = 0
@@ -153,7 +156,7 @@ def raw_to_vcf(cfg):
         return
     cols = resolve_columns(inp.get("format", "generic"), inp.get("columns"))
     sep = inp.get("separator", "\t")
-    usecols = list(dict.fromkeys(cols.values()))
+    usecols = list(dict.fromkeys(list(cols.values()) + ([inp["exclude_flag"]] if inp.get("exclude_flag") else [])))
     with (gzip.open(path, "rt") if path.endswith(".gz") else open(path)) as fh:
         header = fh.readline().rstrip("\n")
     present = pd.read_csv(io.StringIO(header + "\n"), sep=sep, engine="python").columns

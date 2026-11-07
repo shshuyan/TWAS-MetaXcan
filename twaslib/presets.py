@@ -59,6 +59,8 @@ PRESETS = {
 
 
 def resolve_columns(fmt, overrides=None):
+    if fmt == "custom":
+        return {k: v for k, v in (overrides or {}).items() if v}
     if fmt not in PRESETS:
         raise SystemExit(f"Unknown input.format '{fmt}'. Known: {sorted(PRESETS)} or 'gwasvcf'.")
     cols = dict(PRESETS[fmt])
@@ -68,3 +70,48 @@ def resolve_columns(fmt, overrides=None):
         else:
             cols[k] = v
     return cols
+
+
+# Synonyms for auto-detecting columns (case-insensitive). Earlier entries win, so
+# GWAS Catalog harmonised `hm_*` columns are preferred over the submitted ones.
+SYNONYMS = {
+    "chrom": ["hm_chrom", "chromosome", "#chrom", "chrom", "chr", "#chr", "chr_name", "#chromosome"],
+    "pos": ["hm_pos", "base_pair_location", "pos", "position", "bp", "bp_hg38", "bp_hg19", "pos_b38", "pos_b37", "genpos"],
+    "ea": ["hm_effect_allele", "effect_allele", "alt", "ea", "tested_allele", "allele_b", "allele2", "a1"],
+    "nea": ["hm_other_allele", "other_allele", "non_effect_allele", "noneffect_allele", "ref", "nea", "allele_a", "allele1", "a2"],
+    "beta": ["hm_beta", "beta", "b", "effect", "effect_size", "log_odds", "beta_meta"],
+    "odds_ratio": ["hm_odds_ratio", "odds_ratio", "or"],
+    "se": ["standard_error", "se", "sebeta", "stderr", "se_beta", "se_meta"],
+    "pval": ["p_value", "pval", "p", "pvalue", "p.value", "p-value", "p_bolt_lmm", "p_dgc"],
+    "mlogp": ["mlogp", "neg_log_10_p_value", "neglog10_pval", "log10p", "neglog10_pval_meta"],
+    "eaf": ["hm_effect_allele_frequency", "effect_allele_frequency", "af_alt", "eaf", "a1freq", "frq", "freq",
+            "af", "maf_effect", "af_controls", "a1_freq"],
+    "n": ["n", "n_total", "sample_size", "neff", "obs_ct", "n_obs"],
+    "n_cases": ["n_cases", "num_cases", "ncase", "n_case"],
+    "variant_id": ["rsid", "rsids", "snp", "markername", "snpid", "id", "rs_id", "variant_id", "variant"],
+}
+# Allele1/Allele2 mean different things in different tools; flag them for the user to check.
+AMBIGUOUS = {"allele1", "allele2", "a1", "a2"}
+
+
+def autodetect(header):
+    """Guess a column mapping from a list of header names. Returns (mapping, warnings)."""
+    low = {h.lower(): h for h in header}
+    cols, warn = {}, []
+    for field, names in SYNONYMS.items():
+        for n in names:
+            if n in low and low[n] not in cols.values():
+                cols[field] = low[n]
+                if n in AMBIGUOUS:
+                    warn.append(f"'{low[n]}' was used as {field}; check which allele the effect refers to")
+                break
+    if "beta" in cols and "odds_ratio" in cols:
+        cols.pop("odds_ratio")
+    for req in ("chrom", "pos", "ea", "nea"):
+        if req not in cols:
+            warn.append(f"no column found for required field '{req}'")
+    if not any(k in cols for k in ("pval", "mlogp", "zscore")):
+        warn.append("no p-value column found")
+    if not any(k in cols for k in ("beta", "odds_ratio", "zscore")):
+        warn.append("no effect-size column found (beta / odds ratio / z)")
+    return cols, warn

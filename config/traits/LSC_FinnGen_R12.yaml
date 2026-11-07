@@ -2,17 +2,14 @@ id: LSC_FinnGen_R12
 description: Lichen simplex chronicus (neurodermatitis), FinnGen R12 endpoint L12_LICHENSIMPLEX (ICD-10 L28.0).
 ancestry: EUR
 input:
-  # Request the download links at https://www.finngen.fi/en/access_results (free form),
-  # then either set `url` to the endpoint's file from the R12 manifest, or put the file at `path`.
   path: ${raw_dir}/finngen_R12_L12_LICHENSIMPLEX.gz
-  url: null
+  url: https://storage.googleapis.com/finngen-public-data-r12/summary_stats/release/finngen_R12_L12_LICHENSIMPLEX.gz
   format: finngen
   build: hg38
   source: FinnGen R12
-  # Case/control counts are in the R12 manifest (Risteys: https://risteys.finngen.fi/endpoints/L12_LICHENSIMPLEX).
-  n_cases: null
-  n_controls: null
-  sample_size: null
+  n_cases: 1241
+  n_controls: 432874
+  sample_size: 434115
 model_types: [eqtl]
 tissues: all
 # Example bcftools filter applied before harmonization (GWAS-VCF FORMAT fields):

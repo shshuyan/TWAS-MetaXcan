@@ -10,3 +10,6 @@ dependencies:
   - numpy=1.26
   - pip
   - pyyaml
+  - pip:
+    - fastapi==0.115.6
+    - uvicorn==0.32.1

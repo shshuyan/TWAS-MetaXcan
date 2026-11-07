@@ -15,9 +15,32 @@ Traits included:
 | Config | Disease | Source | Build |
 |---|---|---|---|
 | `CAD_CARDIoGRAMplusC4D.yaml` | Coronary artery disease | CARDIoGRAMplusC4D (MetaXcan tutorial data) | hg19 |
-| `LSC_FinnGen_R12.yaml` | Lichen simplex chronicus (neurodermatitis) | FinnGen R12 `L12_LICHENSIMPLEX` | hg38 |
-| `IPF_FinnGen_R12.yaml` | Idiopathic pulmonary fibrosis | FinnGen R12 | hg38 |
+| `LSC_FinnGen_R12.yaml` | Lichen simplex chronicus (neurodermatitis) | FinnGen R12 `L12_LICHENSIMPLEX` (1,241 cases) | hg38 |
+| `IPF_FinnGen_R12.yaml` | Idiopathic pulmonary fibrosis | FinnGen R12 `IPF` (2,700 cases) | hg38 |
 | `TEMPLATE.yaml` | Template for new traits | | |
+
+## Web app
+
+A small web front end searches public GWAS repositories, downloads the chosen dataset and runs this
+pipeline on it, ending at gene-level results.
+
+```bash
+bash webapp/start.sh          # then open http://localhost:8000
+```
+
+1. **Search**: disease name (English) across FinnGen R12, Pan-UK Biobank (per-ancestry analyses) and the
+   GWAS Catalog (studies with full summary statistics; harmonised hg38 files preferred). Filter by ancestry.
+2. **Configure**: the app resolves the download URL, genome build (from GWAS Catalog metadata), column
+   mapping (auto-detected, editable) and case/control counts; choose eQTL/sQTL, tissues and
+   full vs fast mode (fast = no summary imputation, about 1 h instead of 10+ h).
+3. **Run**: writes `config/traits/<ID>.yaml` and queues the run. Runs execute one at a time (each
+   imputation job peaks at ~6-7 GB RAM); the queue also waits for runs started from the command line.
+4. **Results**: S-MultiXcan and S-PrediXcan gene-level tables with Bonferroni flags, gene search and
+   TSV download.
+
+Network hosts used: `storage.googleapis.com` (FinnGen), `pan-ukb-us-east-1.s3.amazonaws.com` (Pan-UKBB),
+`ftp.ebi.ac.uk` (GWAS Catalog), `zenodo.org` (reference bundle). Catalog tables are cached in
+`raw_gwas/_catalogs/` for 30 days.
 
 ## Steps
 
@@ -59,7 +82,8 @@ same hg38 alleles), which is useful for colocalization, MR and cross-trait look-
 
 1. Copy `config/traits/TEMPLATE.yaml` to `config/traits/<ID>.yaml`.
 2. Set `input.path` (or `input.url`), `input.format` (`cardiogram`, `finngen`, `gwas_catalog`,
-   `pan_ukbb`, `bbj`, `generic`, or `gwasvcf` for files that are already GWAS-VCF), `input.build`,
+   `pan_ukbb`, `bbj`, `generic`, `custom` with a full `input.columns` map, or `gwasvcf` for files that are
+   already GWAS-VCF), `input.build`,
    and sample sizes. Use `input.columns` to rename any column the preset gets wrong.
 3. `python twas.py run config/traits/<ID>.yaml`
 

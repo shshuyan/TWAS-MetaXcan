@@ -1,0 +1,279 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TWAS Workbench</title>
+<style>
+:root{--bg:#f7f7f5;--panel:#fff;--ink:#1d1d1b;--muted:#6b6b66;--line:#e3e2dc;--accent:#2f5d8a;--accent-ink:#fff;--ok:#2e7d4f;--warn:#a5641b;--bad:#b3261e;--chip:#eef1f5;--code:#f1f0ec}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#161615;--panel:#1f1f1d;--ink:#ecebe6;--muted:#a3a29b;--line:#34332f;--accent:#7fa8d1;--accent-ink:#0f1720;--ok:#6cc08f;--warn:#e0a35a;--bad:#ef8a83;--chip:#2a2e34;--code:#2a2926}}
+:root[data-theme=dark]{--bg:#161615;--panel:#1f1f1d;--ink:#ecebe6;--muted:#a3a29b;--line:#34332f;--accent:#7fa8d1;--accent-ink:#0f1720;--ok:#6cc08f;--warn:#e0a35a;--bad:#ef8a83;--chip:#2a2e34;--code:#2a2926}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif}
+header{display:flex;align-items:baseline;gap:16px;padding:18px 24px 0;flex-wrap:wrap}
+header h1{font-size:19px;margin:0;font-weight:650}
+header .sub{color:var(--muted);font-size:13px}
+nav{display:flex;gap:4px;padding:12px 24px 0;border-bottom:1px solid var(--line)}
+nav button{background:none;border:0;border-bottom:2px solid transparent;padding:8px 12px;color:var(--muted);font:inherit;cursor:pointer}
+nav button.on{color:var(--ink);border-color:var(--accent);font-weight:600}
+main{padding:20px 24px 60px;max-width:1280px}
+section{display:none}section.on{display:block}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:16px;margin-bottom:16px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+input,select,textarea{font:inherit;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:7px 9px}
+input[type=text]{min-width:0}
+button.btn{font:inherit;border:1px solid var(--accent);background:var(--accent);color:var(--accent-ink);border-radius:6px;padding:7px 14px;cursor:pointer}
+button.ghost{background:transparent;color:var(--accent)}
+button:disabled{opacity:.5;cursor:default}
+.chip{display:inline-block;background:var(--chip);border-radius:999px;padding:3px 10px;margin:2px;cursor:pointer;font-size:13px}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th,td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+th{color:var(--muted);font-weight:600;position:sticky;top:0;background:var(--panel)}
+td.num{font-variant-numeric:tabular-nums;white-space:nowrap}
+.scroll{max-height:480px;overflow:auto}
+.tag{display:inline-block;font-size:11px;padding:1px 7px;border-radius:4px;background:var(--chip);color:var(--muted);margin-right:4px}
+.tag.eas{background:#fdebd3;color:#7a4a10}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]) .tag.eas{background:#4a3417;color:#f3c98d}}
+.muted{color:var(--muted)}.ok{color:var(--ok)}.warn{color:var(--warn)}.bad{color:var(--bad)}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+label.f{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--muted)}
+label.f input,label.f select{color:var(--ink);font-size:14px}
+pre{background:var(--code);padding:10px;border-radius:6px;overflow:auto;font-size:12px;max-height:320px;white-space:pre-wrap}
+.bar{height:6px;background:var(--line);border-radius:3px;overflow:hidden;min-width:120px}
+.bar>i{display:block;height:100%;background:var(--accent)}
+.steps{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}
+.step{font-size:11px;padding:1px 6px;border-radius:4px;border:1px solid var(--line);color:var(--muted)}
+.step.d{border-color:var(--ok);color:var(--ok)}.step.c{border-color:var(--accent);color:var(--accent);font-weight:600}
+.colmap{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px}
+.notice{padding:8px 10px;border-radius:6px;background:var(--chip);margin:8px 0;font-size:13px}
+.notice.w{border-left:3px solid var(--warn)}
+@media (max-width:640px){header,nav,main{padding-left:16px;padding-right:16px}}
+</style>
+</head>
+<body>
+<header><h1>TWAS Workbench</h1><span class="sub">公开 GWAS → GWAS-VCF → S-PrediXcan / S-MultiXcan → gene-level results</span></header>
+<nav>
+  <button data-tab="search" class="on">① 搜索数据</button>
+  <button data-tab="jobs">② 任务</button>
+  <button data-tab="results">③ 结果</button>
+</nav>
+<main>
+
+<section id="search" class="on">
+  <div class="panel">
+    <div class="row">
+      <input id="q" type="text" placeholder="疾病名称（英文），如 lichen simplex / pulmonary fibrosis" style="flex:1 1 320px">
+      <select id="anc"><option value="">全部人群</option><option>EUR</option><option>EAS</option><option>CSA</option><option>AFR</option><option>AMR</option></select>
+      <button class="btn" id="go">搜索</button>
+    </div>
+    <div style="margin-top:8px">
+      <span class="muted" style="font-size:12px">常用：</span>
+      <span class="chip">lichen simplex</span><span class="chip">idiopathic pulmonary fibrosis</span>
+      <span class="chip">coronary artery disease</span><span class="chip">atopic dermatitis</span>
+      <span class="chip">lung cancer</span><span class="chip">psoriasis</span>
+    </div>
+    <div class="muted" style="font-size:12px;margin-top:6px">来源：FinnGen R12 · Pan-UK Biobank · GWAS Catalog（仅含完整 summary statistics 的研究）。首次搜索需下载目录，约 1–2 分钟。</div>
+  </div>
+  <div class="panel" id="hits" style="display:none">
+    <div class="row" style="justify-content:space-between"><b id="hitcount"></b><span class="muted" style="font-size:12px">点击一行进行配置</span></div>
+    <div class="scroll"><table><thead><tr><th>来源</th><th>ID</th><th>性状</th><th>人群</th><th>病例</th><th>说明</th></tr></thead><tbody id="hitrows"></tbody></table></div>
+  </div>
+  <div class="panel" id="cfg" style="display:none"></div>
+</section>
+
+<section id="jobs">
+  <div class="panel">
+    <div class="row" style="justify-content:space-between"><b>性状与任务</b><button class="btn ghost" id="reload">刷新</button></div>
+    <div id="joblist" style="margin-top:10px"></div>
+  </div>
+  <div class="panel" id="logpanel" style="display:none"><div class="row" style="justify-content:space-between"><b id="logtitle"></b><button class="btn ghost" id="logclose">关闭</button></div><pre id="logtext"></pre></div>
+</section>
+
+<section id="results">
+  <div class="panel">
+    <div class="row">
+      <select id="rtrait" style="flex:1 1 260px"></select>
+      <select id="rkind"><option value="smultixcan">S-MultiXcan（跨组织）</option><option value="spredixcan">S-PrediXcan（单组织）</option></select>
+      <select id="rmodel"><option>eqtl</option><option>sqtl</option></select>
+      <input id="rq" type="text" placeholder="基因名筛选" style="width:140px">
+      <label class="muted" style="font-size:13px"><input type="checkbox" id="rsig"> 仅显著</label>
+      <button class="btn" id="rgo">查看</button>
+      <button class="btn ghost" id="rdl">下载 TSV</button>
+    </div>
+    <div id="rmeta" class="muted" style="margin-top:8px;font-size:13px"></div>
+  </div>
+  <div class="panel"><div class="scroll" style="max-height:640px"><table><thead id="rhead"></thead><tbody id="rbody"></tbody></table></div></div>
+</section>
+</main>
+
+<script>
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const fmtP = p => p == null ? "" : (p < 1e-3 ? Number(p).toExponential(2) : Number(p).toPrecision(3));
+async function api(path, opt = {}) {
+  const r = await fetch(path, opt);
+  const t = await r.text();
+  let j; try { j = JSON.parse(t); } catch { j = t; }
+  if (!r.ok) throw new Error(j && j.detail ? j.detail : t);
+  return j;
+}
+document.querySelectorAll("nav button").forEach(b => b.onclick = () => tab(b.dataset.tab));
+function tab(name) {
+  document.querySelectorAll("nav button").forEach(b => b.classList.toggle("on", b.dataset.tab === name));
+  document.querySelectorAll("section").forEach(s => s.classList.toggle("on", s.id === name));
+  if (name === "jobs") loadJobs();
+  if (name === "results") loadTraitSelect();
+}
+
+// ---------------- search
+document.querySelectorAll(".chip").forEach(c => c.onclick = () => { $("#q").value = c.textContent; search(); });
+$("#go").onclick = search; $("#q").onkeydown = e => { if (e.key === "Enter") search(); };
+let HITS = [];
+async function search() {
+  const q = $("#q").value.trim(); if (!q) return;
+  $("#hits").style.display = "block"; $("#hitcount").textContent = "搜索中…"; $("#hitrows").innerHTML = ""; $("#cfg").style.display = "none";
+  try {
+    HITS = await api(`/api/search?q=${encodeURIComponent(q)}&ancestry=${$("#anc").value}`);
+    $("#hitcount").textContent = `${HITS.length} 个数据集`;
+    $("#hitrows").innerHTML = HITS.map((h, i) => `<tr data-i="${i}" style="cursor:pointer">
+      <td><span class="tag">${esc({finngen:"FinnGen",pan_ukbb:"Pan-UKBB",gwas_catalog:"GWAS Catalog"}[h.source])}</span></td>
+      <td>${esc(h.id)}</td><td>${esc(h.trait)}</td>
+      <td>${h.ancestry.split(",").filter(Boolean).map(a => `<span class="tag ${a==="EAS"?"eas":""}">${esc(a)}</span>`).join("")}</td>
+      <td class="num">${h.n_cases ?? ""}</td><td class="muted" style="font-size:12px">${esc(h.detail).slice(0, 160)}</td></tr>`).join("");
+    document.querySelectorAll("#hitrows tr").forEach(tr => tr.onclick = () => configure(HITS[+tr.dataset.i]));
+  } catch (e) { $("#hitcount").innerHTML = `<span class="bad">${esc(e.message)}</span>`; }
+}
+
+// ---------------- configure
+const FIELDS = [["chrom","染色体*"],["pos","位置*"],["ea","效应等位基因*"],["nea","另一等位基因*"],["beta","beta"],["odds_ratio","OR"],["se","SE"],["pval","p"],["mlogp","-log10 p"],["eaf","效应等位基因频率"],["n","N（逐位点）"],["n_cases","病例数（逐位点）"],["variant_id","rsID"]];
+let SPEC = null, TISSUES = null;
+async function configure(hit, pop) {
+  const box = $("#cfg"); box.style.display = "block";
+  box.innerHTML = `<b>${esc(hit.trait)}</b> <span class="muted">正在解析下载地址与列格式…</span>`;
+  box.scrollIntoView({behavior: "smooth"});
+  try {
+    if (!TISSUES) TISSUES = await api("/api/tissues");
+    pop = pop || ($("#anc").value && hit.pops.includes($("#anc").value) ? $("#anc").value : "");
+    SPEC = await api(`/api/resolve?source=${hit.source}&id=${encodeURIComponent(hit.id)}&pop=${pop}`);
+  } catch (e) { box.innerHTML = `<span class="bad">${esc(e.message)}</span>`; return; }
+  const s = SPEC, opts = h => `<option value="">—</option>` + s.header.map(c => `<option ${c===h?"selected":""}>${esc(c)}</option>`).join("");
+  const mism = s.ancestry !== "EUR";
+  box.innerHTML = `
+    <div class="row" style="justify-content:space-between"><b>${esc(s.description)}</b><span class="tag">${esc(s.source_label)}</span></div>
+    <div class="muted" style="font-size:12px;word-break:break-all;margin:4px 0 10px">${esc(s.url)}</div>
+    ${s.warnings.map(w => `<div class="notice w">${esc(w)}</div>`).join("")}
+    ${mism ? `<div class="notice w">该数据集人群为 <b>${esc(s.ancestry)}</b>，而当前 LD 参考面板与 GTEx 表达模型均为欧洲人群（EUR）。结果可能有偏；如需继续，请勾选下方“允许人群不匹配”，或在配置文件中提供对应人群的 reference。</div>` : ""}
+    <div class="grid">
+      <label class="f">Trait ID（文件名用）<input id="c_id" value="${esc(s.trait_id)}"></label>
+      <label class="f">基因组版本<select id="c_build">${["hg19","hg38","hg18"].map(b => `<option ${b===s.build?"selected":""}>${b}</option>`).join("")}${s.build==="?"?'<option selected value="">请选择</option>':""}</select></label>
+      <label class="f">人群<input id="c_anc" value="${esc(s.ancestry)}"></label>
+      ${hit.source==="pan_ukbb" ? `<label class="f">Pan-UKBB 人群分析<select id="c_pop">${hit.pops.map(p => `<option ${p===s.ancestry?"selected":""}>${p}</option>`).join("")}</select></label>` : ""}
+      <label class="f">总样本量<input id="c_n" type="number" value="${s.sample_size ?? ""}"></label>
+      <label class="f">病例数<input id="c_cases" type="number" value="${s.n_cases ?? ""}"></label>
+      <label class="f">对照数<input id="c_ctrl" type="number" value="${s.n_controls ?? ""}"></label>
+    </div>
+    <details style="margin-top:12px" ${s.warnings.length ? "open" : ""}><summary><b>列映射</b> <span class="muted">（自动识别，可修改）</span></summary>
+      <div class="colmap" style="margin-top:8px">${FIELDS.map(([k, l]) => `<label class="f">${l}<select data-col="${k}">${opts(s.columns[k])}</select></label>`).join("")}</div>
+    </details>
+    <div class="grid" style="margin-top:12px">
+      <label class="f">模型<select id="c_models"><option value="eqtl">eQTL（基因表达）</option><option value="eqtl,sqtl">eQTL + sQTL（剪接）</option></select></label>
+      <label class="f">组织<select id="c_tissue_mode"><option value="all">全部 ${TISSUES.length} 个 GTEx 组织</option><option value="pick">自选</option></select></label>
+      <label class="f">模式<select id="c_fast"><option value="0">完整（含 summary imputation，约 10 小时+）</option><option value="1">快速（跳过 imputation，约 1 小时）</option></select></label>
+    </div>
+    <div id="c_tissues" style="display:none;margin-top:8px;max-height:160px;overflow:auto;columns:3 220px;font-size:13px">
+      ${TISSUES.map(t => `<label style="display:block"><input type="checkbox" value="${esc(t)}"> ${esc(t.replaceAll("_"," "))}</label>`).join("")}</div>
+    <div class="row" style="margin-top:14px">
+      ${mism ? `<label class="muted"><input type="checkbox" id="c_mism"> 允许人群不匹配</label>` : ""}
+      <label class="muted"><input type="checkbox" id="c_over"> 覆盖同名配置</label>
+      <button class="btn" id="c_run">下载并运行</button><span id="c_msg"></span>
+    </div>`;
+  $("#c_tissue_mode").onchange = e => $("#c_tissues").style.display = e.target.value === "pick" ? "block" : "none";
+  if ($("#c_pop")) $("#c_pop").onchange = e => configure(hit, e.target.value);
+  $("#c_run").onclick = submit;
+}
+async function submit() {
+  const s = {...SPEC}; delete s.header;
+  s.trait_id = $("#c_id").value.trim(); s.build = $("#c_build").value; s.ancestry = $("#c_anc").value.trim().toUpperCase();
+  const num = id => $(id).value === "" ? null : +$(id).value;
+  s.sample_size = num("#c_n"); s.n_cases = num("#c_cases"); s.n_controls = num("#c_ctrl");
+  const cols = {}; document.querySelectorAll("[data-col]").forEach(sel => { if (sel.value) cols[sel.dataset.col] = sel.value; });
+  if (JSON.stringify(cols) !== JSON.stringify(SPEC.columns)) { s.columns = cols; s.format = "custom"; }
+  s.model_types = $("#c_models").value.split(",");
+  s.skip_imputation = $("#c_fast").value === "1";
+  if ($("#c_tissue_mode").value === "pick") {
+    s.tissues = [...document.querySelectorAll("#c_tissues input:checked")].map(i => i.value);
+    if (!s.tissues.length) { $("#c_msg").innerHTML = `<span class="bad">请至少选择一个组织</span>`; return; }
+  }
+  s.allow_ancestry_mismatch = !!($("#c_mism") && $("#c_mism").checked);
+  s.overwrite = $("#c_over").checked;
+  $("#c_run").disabled = true; $("#c_msg").textContent = "提交中…";
+  try {
+    const r = await api("/api/jobs", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(s)});
+    $("#c_msg").innerHTML = `<span class="ok">已加入队列：${esc(r.config)}</span>`;
+    setTimeout(() => tab("jobs"), 700);
+  } catch (e) { $("#c_msg").innerHTML = `<span class="bad">${esc(e.message)}</span>`; }
+  $("#c_run").disabled = false;
+}
+
+// ---------------- jobs
+$("#reload").onclick = loadJobs;
+let jobTimer = null;
+async function loadJobs() {
+  clearTimeout(jobTimer);
+  let ts; try { ts = await api("/api/traits"); } catch (e) { $("#joblist").innerHTML = `<span class="bad">${esc(e.message)}</span>`; return; }
+  $("#joblist").innerHTML = `<table><thead><tr><th>Trait</th><th>状态</th><th>进度</th><th></th></tr></thead><tbody>${ts.map(t => {
+    if (t.error) return `<tr><td>${esc(t.trait_id)}</td><td class="bad" colspan="3">${esc(t.error)}</td></tr>`;
+    const p = t.progress, pct = Math.round(100 * p.done / p.total);
+    const cls = {running:"ok",failed:"bad",queued:"warn",cancelled:"muted"}[t.status] || "muted";
+    return `<tr><td><b>${esc(t.trait_id)}</b><div class="muted" style="font-size:12px">${esc(t.description)}</div>
+      <div>${t.ancestry?`<span class="tag ${t.ancestry==="EAS"?"eas":""}">${esc(t.ancestry)}</span>`:""}${t.skip_imputation?'<span class="tag">快速模式</span>':""}${t.model_types.map(m=>`<span class="tag">${esc(m)}</span>`).join("")}</div></td>
+      <td class="${cls}" style="white-space:nowrap">${t.waiting && t.status==="queued" ? '<div class="muted" style="font-size:12px">等待其他任务结束</div>' : ""}${esc({running:"运行中",queued:"排队中",done:p.finished?"已完成":"已结束",failed:"失败",cancelled:"已取消",idle:"未运行"}[t.status] || t.status)}</td>
+      <td><div class="bar"><i style="width:${pct}%"></i></div>
+        <div class="steps">${p.steps.map(s => `<span class="step ${s.done?"d":(s.name===p.current?"c":"")}">${esc(s.name)}${s.detail&&!s.done?" "+esc(s.detail):""}</span>`).join("")}</div></td>
+      <td style="white-space:nowrap">
+        ${t.external ? `<span class="muted" style="font-size:12px">命令行启动</span> ` : ["running","queued"].includes(t.status) ? `<button class="btn ghost" data-a="cancel" data-t="${esc(t.trait_id)}">取消</button>` : `<button class="btn ghost" data-a="run" data-t="${esc(t.trait_id)}">${p.finished?"重跑":"运行/继续"}</button>`}
+        <button class="btn ghost" data-a="log" data-t="${esc(t.trait_id)}">日志</button>
+        ${p.finished ? `<button class="btn" data-a="res" data-t="${esc(t.trait_id)}">结果</button>` : ""}</td></tr>`;
+  }).join("")}</tbody></table>`;
+  document.querySelectorAll("#joblist [data-a]").forEach(b => b.onclick = () => jobAction(b.dataset.a, b.dataset.t));
+  if (ts.some(t => ["running","queued"].includes(t.status)) && $("#jobs").classList.contains("on")) jobTimer = setTimeout(loadJobs, 8000);
+}
+async function jobAction(a, t) {
+  try {
+    if (a === "run") await api(`/api/traits/${t}/run`, {method: "POST", headers: {"Content-Type": "application/json"}, body: "{}"});
+    if (a === "cancel") await api(`/api/traits/${t}/cancel`, {method: "POST"});
+    if (a === "log") { $("#logpanel").style.display = "block"; $("#logtitle").textContent = t + " 日志"; $("#logtext").textContent = await api(`/api/traits/${t}/log`); return; }
+    if (a === "res") { tab("results"); await loadTraitSelect(t); showResults(); return; }
+    loadJobs();
+  } catch (e) { alert(e.message); }
+}
+$("#logclose").onclick = () => $("#logpanel").style.display = "none";
+
+// ---------------- results
+async function loadTraitSelect(sel) {
+  const ts = await api("/api/traits");
+  const cur = sel || $("#rtrait").value;
+  $("#rtrait").innerHTML = ts.filter(t => !t.error).map(t => `<option ${t.trait_id===cur?"selected":""} value="${esc(t.trait_id)}">${esc(t.trait_id)}${t.progress.finished?"":"（未完成）"}</option>`).join("");
+}
+$("#rgo").onclick = showResults; $("#rq").onkeydown = e => { if (e.key === "Enter") showResults(); };
+$("#rdl").onclick = () => { location.href = `/api/traits/${$("#rtrait").value}/download?kind=${$("#rkind").value}&model_type=${$("#rmodel").value}`; };
+async function showResults() {
+  const t = $("#rtrait").value; if (!t) return;
+  $("#rmeta").textContent = "加载中…"; $("#rbody").innerHTML = "";
+  try {
+    const r = await api(`/api/traits/${t}/results?kind=${$("#rkind").value}&model_type=${$("#rmodel").value}&q=${encodeURIComponent($("#rq").value)}&significant_only=${$("#rsig").checked}&limit=500`);
+    $("#rmeta").innerHTML = `${r.n_tests.toLocaleString()} 个检验 · Bonferroni 阈值 p &lt; ${fmtP(r.threshold)} · <b>${r.n_significant}</b> 个显著 · 显示前 ${r.rows.length} 行`;
+    if (!r.rows.length) { $("#rhead").innerHTML = ""; return; }
+    const cols = Object.keys(r.rows[0]).filter(c => c !== "bonferroni_threshold");
+    $("#rhead").innerHTML = `<tr>${cols.map(c => `<th>${esc(c)}</th>`).join("")}</tr>`;
+    $("#rbody").innerHTML = r.rows.map(row => `<tr>${cols.map(c => {
+      const v = row[c];
+      if (c === "significant") return `<td>${v ? '<span class="ok">✓</span>' : ""}</td>`;
+      if (/^p/.test(c) && typeof v === "number") return `<td class="num">${fmtP(v)}</td>`;
+      if (typeof v === "number") return `<td class="num">${Number.isInteger(v) ? v : v.toPrecision(3)}</td>`;
+      return `<td>${esc(v)}</td>`; }).join("")}</tr>`).join("");
+  } catch (e) { $("#rmeta").innerHTML = `<span class="bad">${esc(e.message)}</span>`; }
+}
+</script>
+</body>
+</html>

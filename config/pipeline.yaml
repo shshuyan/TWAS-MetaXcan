@@ -13,7 +13,7 @@ python:
 tools:
   bcftools: /opt/conda/envs/vcftools/bin/bcftools
 
-njobs: 4                  # parallel imputation / S-PrediXcan jobs
+njobs: 2                  # parallel imputation / S-PrediXcan jobs; each imputation job peaks at ~6-7 GB RAM (reference genotypes)
 alpha: 0.05               # family-wise alpha for Bonferroni
 write_harmonized_vcf: true
 
