@@ -1,0 +1,43 @@
+# Machine-level settings shared by every trait. ${root} = repository root.
+paths:
+  data_dir: ${root}/data/data                  # MetaXcan tutorial bundle (Zenodo 3657902)
+  work_dir: ${root}/work                        # large intermediate files (not in git)
+  results_dir: ${root}/results                  # small result tables (in git)
+  raw_dir: ${root}/raw_gwas                     # downloaded raw GWAS files (not in git)
+  gwas_tools: ${root}/summary-gwas-imputation/src
+  metaxcan: ${root}/MetaXcan/software
+
+python:
+  gwasimputation: /opt/conda/envs/gwasimputation/bin/python
+  metaxcan: /opt/conda/envs/MetaXcan/bin/python
+tools:
+  bcftools: /opt/conda/envs/vcftools/bin/bcftools
+
+njobs: 4                  # parallel imputation / S-PrediXcan jobs
+alpha: 0.05               # family-wise alpha for Bonferroni
+write_harmonized_vcf: true
+
+imputation:
+  window: 100000
+  regularization: 0.1
+  frequency_filter: 0.01
+  sub_batches: 10
+
+# Reference resources. A trait may override any of these with its own `reference:` block,
+# e.g. to use an East Asian LD panel and expression models.
+reference:
+  ancestry: EUR
+  variant_metadata_txt: ${data_dir}/reference_panel_1000G/variant_metadata.txt.gz
+  variant_metadata_parquet: ${data_dir}/reference_panel_1000G/variant_metadata.parquet
+  genotype_parquet: ${data_dir}/reference_panel_1000G/chr{chrom}.variants.parquet
+  ld_blocks: ${data_dir}/eur_ld.bed.gz
+  liftover_dir: ${data_dir}/liftover
+  models:
+    eqtl:
+      dir: ${data_dir}/models/eqtl/mashr
+      prefix: mashr_
+      smultixcan_covariance: ${data_dir}/models/gtex_v8_expression_mashr_snp_smultixcan_covariance.txt.gz
+    sqtl:
+      dir: ${data_dir}/models/sqtl/mashr
+      prefix: mashr_
+      smultixcan_covariance: ${data_dir}/models/gtex_v8_splicing_mashr_snp_smultixcan_covariance.txt.gz

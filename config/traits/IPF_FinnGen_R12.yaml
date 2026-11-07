@@ -1,0 +1,14 @@
+id: IPF_FinnGen_R12
+description: Idiopathic pulmonary fibrosis, FinnGen R12. Check the endpoint code on Risteys (e.g. IPF) before use.
+ancestry: EUR
+input:
+  path: ${raw_dir}/finngen_R12_IPF.gz
+  url: null
+  format: finngen
+  build: hg38
+  source: FinnGen R12
+  n_cases: null
+  n_controls: null
+  sample_size: null
+model_types: [eqtl, sqtl]
+tissues: all

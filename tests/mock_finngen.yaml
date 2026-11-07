@@ -1,0 +1,10 @@
+id: TEST_finngen_mock
+description: Format test only (4 fake FinnGen rows)
+ancestry: EUR
+input:
+  path: ${root}/tests/mock_finngen.gz
+  format: finngen
+  build: hg38
+  n_cases: 1000
+  n_controls: 9000
+  sample_size: 10000

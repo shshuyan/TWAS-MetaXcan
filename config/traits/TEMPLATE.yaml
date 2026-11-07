@@ -1,0 +1,35 @@
+# Copy this file to config/traits/<ID>.yaml and fill it in, then:
+#   python twas.py run config/traits/<ID>.yaml
+id: MY_TRAIT                      # letters, digits, _ . - only; used in all file names
+description: Free text
+ancestry: EUR                     # must match reference.ancestry unless you override `reference:`
+input:
+  path: ${raw_dir}/my_gwas.tsv.gz # raw summary statistics (txt/tsv, gz ok) or a GWAS-VCF
+  url: null                       # optional: downloaded to `path` by the download step
+  format: generic                 # cardiogram | finngen | gwas_catalog | pan_ukbb | bbj | generic | gwasvcf
+  build: hg19                     # hg17 | hg18 | hg19 | hg38 (liftover to hg38 is automatic)
+  separator: "\t"                 # column separator of the raw file
+  columns:                        # override preset columns; set one to null to ignore it
+    variant_id: SNP
+    chrom: CHR
+    pos: BP
+    ea: A1                        # effect allele
+    nea: A2                       # other allele
+    eaf: FRQ                      # effect-allele frequency
+    beta: BETA                    # or odds_ratio: OR
+    se: SE
+    pval: P                       # or mlogp: LOG10P
+  eaf_is_nea_freq: false          # true if the frequency column is for the other allele
+  sample_size: null               # used when there is no per-variant N column
+  n_cases: null
+  n_controls: null
+model_types: [eqtl]               # eqtl and/or sqtl
+tissues: all                      # or a list, e.g. [Whole_Blood, Lung, Skin_Sun_Exposed_Lower_leg]
+skip_imputation: false            # true = run S-PrediXcan on the harmonized GWAS directly (much faster)
+chromosomes: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22]
+vcf_filter: null                  # bcftools -i expression, e.g. "FORMAT/AF>=0.01 && FORMAT/AF<=0.99"
+vcf_regions: null                 # bcftools -r regions, e.g. "1,2,6:25000000-35000000"
+# reference:                      # optional per-trait override of pipeline.yaml `reference`
+#   ancestry: EAS
+#   ld_blocks: /path/to/eas_ld.bed.gz
+#   genotype_parquet: /path/to/eas_panel/chr{chrom}.variants.parquet

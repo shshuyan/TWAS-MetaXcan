@@ -1,5 +1,8 @@
 data/
-output/
+work/
+raw_gwas/
 MetaXcan/
 summary-gwas-imputation/
 *.log
+__pycache__/
+results/*/spredixcan_*_all.tsv.gz
