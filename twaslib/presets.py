@@ -14,16 +14,17 @@ Canonical fields:
   zscore      z-score
   n           per-variant sample size
   n_cases     per-variant number of cases
+  n_controls  per-variant number of controls (n = n_cases + n_controls when n is absent)
 
 A trait config may give `input.columns` to override or extend any preset.
 """
 
 PRESETS = {
-    # CARDIoGRAMplusC4D 1000G additive meta-analysis (the MetaXcan tutorial file)
-    "cardiogram": {
-        "variant_id": "markername", "chrom": "chr", "pos": "bp_hg19",
-        "ea": "effect_allele", "nea": "noneffect_allele", "eaf": "effect_allele_freq",
-        "beta": "beta", "se": "se_dgc", "pval": "p_dgc",
+    # IGAP / Kunkle et al. 2019 Alzheimer's disease stage 1 (space-separated, hg19)
+    "igap": {
+        "variant_id": "MarkerName", "chrom": "Chromosome", "pos": "Position",
+        "ea": "Effect_allele", "nea": "Non_Effect_allele",
+        "beta": "Beta", "se": "SE", "pval": "Pvalue",
     },
     # FinnGen public release files (R5+), build hg38, effect allele = alt
     "finngen": {
@@ -87,8 +88,9 @@ SYNONYMS = {
     "eaf": ["hm_effect_allele_frequency", "effect_allele_frequency", "af_alt", "eaf", "a1freq", "frq", "freq",
             "af", "maf_effect", "af_controls", "a1_freq"],
     "n": ["n", "n_total", "sample_size", "neff", "obs_ct", "n_obs"],
-    "n_cases": ["n_cases", "num_cases", "ncase", "n_case"],
-    "variant_id": ["rsid", "rsids", "snp", "markername", "snpid", "id", "rs_id", "variant_id", "variant"],
+    "n_cases": ["n_cases", "num_cases", "ncase", "n_case", "n_cas"],
+    "n_controls": ["n_controls", "num_controls", "ncontrol", "n_control", "n_con"],
+    "variant_id": ["hm_rsid", "rsid", "rsids", "snp", "markername", "snpid", "id", "rs_id", "variant_id", "variant"],
 }
 # Allele1/Allele2 mean different things in different tools; flag them for the user to check.
 AMBIGUOUS = {"allele1", "allele2", "a1", "a2"}

@@ -1,0 +1,16 @@
+# Alternative / replication: FinnGen R12 endpoint G6_ALZHEIMER (Finnish, EUR), hg38.
+id: AD_FinnGen_R12
+description: Alzheimer disease, FinnGen R12 endpoint G6_ALZHEIMER (13,964 cases / 486,384 controls).
+ancestry: EUR
+input:
+  path: ${raw_dir}/AD_FinnGen_R12/finngen_R12_G6_ALZHEIMER.gz
+  url: https://storage.googleapis.com/finngen-public-data-r12/summary_stats/release/finngen_R12_G6_ALZHEIMER.gz
+  format: finngen
+  build: hg38
+  n_cases: 13964
+  n_controls: 486384
+  sample_size: 500348
+  source: FinnGen R12
+model_types: [eqtl]
+tissues: all
+skip_imputation: false

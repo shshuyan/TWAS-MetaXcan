@@ -6,7 +6,7 @@ ancestry: EUR                     # must match reference.ancestry unless you ove
 input:
   path: ${raw_dir}/my_gwas.tsv.gz # raw summary statistics (txt/tsv, gz ok) or a GWAS-VCF
   url: null                       # optional: downloaded to `path` by the download step
-  format: generic                 # cardiogram | finngen | gwas_catalog | pan_ukbb | bbj | generic | gwasvcf
+  format: generic                 # igap | finngen | gwas_catalog | pan_ukbb | bbj | generic | gwasvcf
   build: hg19                     # hg17 | hg18 | hg19 | hg38 (liftover to hg38 is automatic)
   separator: "\t"                 # column separator of the raw file
   columns:                        # override preset columns; set one to null to ignore it
@@ -21,6 +21,7 @@ input:
     pval: P                       # or mlogp: LOG10P
   eaf_is_nea_freq: false          # true if the frequency column is for the other allele
   sample_size: null               # used when there is no per-variant N column
+  # columns can also map n_cases / n_controls to per-variant count columns
   n_cases: null
   n_controls: null
 model_types: [eqtl]               # eqtl and/or sqtl

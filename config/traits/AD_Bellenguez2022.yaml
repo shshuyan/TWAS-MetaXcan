@@ -1,0 +1,31 @@
+# Primary Alzheimer's disease GWAS.
+# Bellenguez et al. 2022, Nat Genet 54:412 (EADB + UK Biobank proxy cases), stage 1.
+# GWAS Catalog GCST90027158, harmonised to hg38 by the Catalog.
+id: AD_Bellenguez2022
+description: Alzheimer's disease, Bellenguez et al. 2022 (EADB stage 1, 39,106 clinical + 46,828 proxy cases), GWAS Catalog GCST90027158.
+ancestry: EUR
+input:
+  path: ${raw_dir}/AD_Bellenguez2022/35379992-GCST90027158-MONDO_0004975.h.tsv.gz
+  url: https://ftp.ebi.ac.uk/pub/databases/gwas/summary_statistics/GCST90027001-GCST90028000/GCST90027158/harmonised/35379992-GCST90027158-MONDO_0004975.h.tsv.gz
+  format: custom
+  build: hg38
+  separator: "\t"
+  columns:              # GWAS Catalog harmonised columns (hm_* = aligned to hg38)
+    variant_id: hm_rsid
+    chrom: hm_chrom
+    pos: hm_pos
+    ea: hm_effect_allele
+    nea: hm_other_allele
+    beta: hm_beta
+    se: standard_error
+    pval: p_value
+    eaf: hm_effect_allele_frequency
+    n_cases: n_cas      # per-variant counts; sample size = n_cas + n_con
+    n_controls: n_con
+  n_cases: 85934
+  n_controls: 401577
+  sample_size: 487511
+  source: GWAS Catalog GCST90027158
+model_types: [eqtl]
+tissues: all
+skip_imputation: false

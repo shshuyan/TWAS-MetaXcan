@@ -93,6 +93,8 @@ def standardize_chunk(df, cols, inp):
 
     out["ES"], out["SE"], out["LP"], out["AF"], out["EZ"] = beta, se, lp.clip(upper=LP_CAP), eaf, z
     n = num("n")
+    if get("n") is None and get("n_cases") is not None and get("n_controls") is not None:
+        n = num("n_cases") + num("n_controls")  # e.g. EADB / GWAS Catalog n_cas + n_con
     out["SS"] = n.where(n.notna(), inp.get("sample_size") or np.nan)
     nc = num("n_cases")
     out["NC"] = nc.where(nc.notna(), inp.get("n_cases") or np.nan)

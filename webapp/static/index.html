@@ -62,15 +62,15 @@ pre{background:var(--code);padding:10px;border-radius:6px;overflow:auto;font-siz
 <section id="search" class="on">
   <div class="panel">
     <div class="row">
-      <input id="q" type="text" placeholder="疾病名称（英文），如 lichen simplex / pulmonary fibrosis" style="flex:1 1 320px">
+      <input id="q" type="text" placeholder="疾病名称（英文），如 alzheimer / chemotherapy neuropathy" style="flex:1 1 320px">
       <select id="anc"><option value="">全部人群</option><option>EUR</option><option>EAS</option><option>CSA</option><option>AFR</option><option>AMR</option></select>
       <button class="btn" id="go">搜索</button>
     </div>
     <div style="margin-top:8px">
       <span class="muted" style="font-size:12px">常用：</span>
-      <span class="chip">lichen simplex</span><span class="chip">idiopathic pulmonary fibrosis</span>
-      <span class="chip">coronary artery disease</span><span class="chip">atopic dermatitis</span>
-      <span class="chip">lung cancer</span><span class="chip">psoriasis</span>
+      <span class="chip">alzheimer</span><span class="chip">dementia</span>
+      <span class="chip">chemotherapy-induced peripheral neuropathy</span><span class="chip">paclitaxel</span>
+      <span class="chip">polyneuropathy</span><span class="chip">idiopathic pulmonary fibrosis</span>
     </div>
     <div class="muted" style="font-size:12px;margin-top:6px">来源：FinnGen R12 · Pan-UK Biobank · GWAS Catalog（仅含完整 summary statistics 的研究）。首次搜索需下载目录，约 1–2 分钟。</div>
   </div>
@@ -145,7 +145,7 @@ async function search() {
 }
 
 // ---------------- configure
-const FIELDS = [["chrom","染色体*"],["pos","位置*"],["ea","效应等位基因*"],["nea","另一等位基因*"],["beta","beta"],["odds_ratio","OR"],["se","SE"],["pval","p"],["mlogp","-log10 p"],["eaf","效应等位基因频率"],["n","N（逐位点）"],["n_cases","病例数（逐位点）"],["variant_id","rsID"]];
+const FIELDS = [["chrom","染色体*"],["pos","位置*"],["ea","效应等位基因*"],["nea","另一等位基因*"],["beta","beta"],["odds_ratio","OR"],["se","SE"],["pval","p"],["mlogp","-log10 p"],["eaf","效应等位基因频率"],["n","N（逐位点）"],["n_cases","病例数（逐位点）"],["n_controls","对照数（逐位点）"],["variant_id","rsID"]];
 let SPEC = null, TISSUES = null;
 async function configure(hit, pop) {
   const box = $("#cfg"); box.style.display = "block";

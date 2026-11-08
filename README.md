@@ -1,135 +1,152 @@
-# TWAS pipeline: GWAS-VCF + S-PrediXcan / S-MultiXcan
+# TWAS-MetaXcan: Alzheimer's disease TWAS with S-PrediXcan / S-MultiXcan
 
-A config-driven transcriptome-wide association study (TWAS) pipeline built on
+A transcriptome-wide association study (TWAS) pipeline for **Alzheimer's disease (AD)**, following the
+MetaXcan tutorial workflow (harmonize GWAS → summary imputation → S-PrediXcan → S-MultiXcan →
+gene-level results) with GTEx v8 MASHR expression (eQTL) and splicing (sQTL) models. Built on
 [MetaXcan](https://github.com/hakyimlab/MetaXcan) and
-[summary-gwas-imputation](https://github.com/hakyimlab/summary-gwas-imputation),
-with GTEx v8 MASHR expression (eQTL) and splicing (sQTL) models.
+[summary-gwas-imputation](https://github.com/hakyimlab/summary-gwas-imputation).
 
-Each disease is one YAML file in `config/traits/`. Any GWAS layout is first converted to
-**GWAS-VCF** ([Lyon et al. 2021](https://doi.org/10.1186/s13059-020-02248-0), the MRC-IEU OpenGWAS format)
-and then handled with `bcftools`. This gives every dataset the same representation, so new diseases
-(neurodermatitis, pulmonary fibrosis, ...) only need a new config file.
+The pipeline is config-driven: each GWAS is one YAML file in `config/traits/`. Every input layout is
+first converted to **GWAS-VCF** ([Lyon et al. 2021](https://doi.org/10.1186/s13059-020-02248-0), the
+MRC-IEU OpenGWAS format) and handled with `bcftools`, so other diseases (e.g. chemotherapy-induced
+peripheral neuropathy) only need a new config file.
 
-Traits included:
+## AD GWAS datasets
 
-| Config | Disease | Source | Build |
-|---|---|---|---|
-| `CAD_CARDIoGRAMplusC4D.yaml` | Coronary artery disease | CARDIoGRAMplusC4D (MetaXcan tutorial data) | hg19 |
-| `LSC_FinnGen_R12.yaml` | Lichen simplex chronicus (neurodermatitis) | FinnGen R12 `L12_LICHENSIMPLEX` (1,241 cases) | hg38 |
-| `IPF_FinnGen_R12.yaml` | Idiopathic pulmonary fibrosis | FinnGen R12 `IPF` (2,700 cases) | hg38 |
-| `TEMPLATE.yaml` | Template for new traits | | |
+| Config | Study | Cases / controls | Build | Source |
+|---|---|---|---|---|
+| **`AD_Bellenguez2022.yaml`** (primary) | Bellenguez et al. 2022, *Nat Genet* (EADB stage 1) | 85,934 (39,106 clinical + 46,828 UKB proxy) / 401,577 | hg38 (GWAS Catalog harmonised) | [GCST90027158](https://www.ebi.ac.uk/gwas/studies/GCST90027158) |
+| `AD_Kunkle2019.yaml` | Kunkle et al. 2019, *Nat Genet* (IGAP stage 1), clinically diagnosed late-onset AD | 21,982 / 41,944 | hg19 | [GCST007511](https://www.ebi.ac.uk/gwas/studies/GCST007511) |
+| `AD_FinnGen_R12.yaml` | FinnGen R12 endpoint `G6_ALZHEIMER` (replication) | 13,964 / 486,384 | hg38 | [FinnGen](https://www.finngen.fi/en/access_results) |
+| `IPF_FinnGen_R12.yaml` | Idiopathic pulmonary fibrosis, FinnGen R12 `IPF` | 2,700 / 494,583 | hg38 | FinnGen |
+| `TEMPLATE.yaml` | Template for new traits | | | |
+
+All three AD datasets are European ancestry, matching the European LD reference and GTEx models.
+Bellenguez 2022 includes UK Biobank "proxy" cases (family history of dementia); Kunkle 2019 is the
+largest clinically-diagnosed-only set, useful as a sensitivity analysis.
+
+## Run
+
+```bash
+python twas.py run config/traits/AD_Bellenguez2022.yaml        # download → ... → gene-level results
+bash run_detached.sh config/traits/AD_Bellenguez2022.yaml      # same, in the background (survives logout)
+python twas.py run config/traits/AD_*.yaml                     # all three AD datasets in turn
+python twas.py compare config/traits/AD_Bellenguez2022.yaml config/traits/AD_Kunkle2019.yaml config/traits/AD_FinnGen_R12.yaml
+```
+
+Runtime and resources: the full run (with summary imputation, 220 jobs) takes about 10–12 h with
+`njobs: 2` and needs ~16 GB RAM (each imputation job peaks at ~6–7 GB). Setting `skip_imputation: true`
+in the trait config runs S-PrediXcan directly on the harmonized GWAS (well under 1 h for 49 tissues).
+
+## Workflow and how it maps to the MetaXcan tutorial
+
+| Tutorial section | Step here | What it does |
+|---|---|---|
+| 3. Download data | `download` | Fetch the AD GWAS from `input.url` (reference bundle: Zenodo 3657902) |
+| — | `standardize` | Map columns, derive missing beta/SE/z/p, write GWAS-VCF (`bcftools sort` + tabix) |
+| — | `export` | `bcftools query` (+ optional `-i` filter / `-r` regions; autosomes) → MetaXcan input table |
+| 4. Harmonize (hg19 → hg38) | `harmonize` | `gwas_parsing.py`: liftover when `build` is not hg38, align alleles to the 1000G/GTEx panel; also writes a harmonized hg38 GWAS-VCF |
+| 5. Impute GWAS | `impute` | `gwas_summary_imputation.py`, 22 chromosomes × 10 sub-batches, parallel, failed jobs retried |
+| 6. Merge 220 batches | `postprocess` | `gwas_summary_imputation_postprocess.py` |
+| 7. Single tissue | `spredixcan` | `SPrediXcan.py` in every GTEx v8 tissue (MASHR models) |
+| 8. Multiple tissues | `smultixcan` | `SMulTiXcan.py` across tissues |
+| 9. Results | `summarize` | Gene-level tables with Bonferroni significance → `results/<ID>/` |
+
+Every step skips work whose output already exists, so an interrupted run can be restarted.
+
+## Results (tutorial section 9)
+
+`results/<ID>/` contains:
+
+- `spredixcan_eqtl_Whole_Blood.csv`: gene-level S-PrediXcan results for Whole Blood, the same table as
+  the tutorial's "Gene level results" example
+- `spredixcan_eqtl_significant.tsv`: Bonferroni-significant gene–tissue pairs, all tissues
+- `smultixcan_eqtl_significant.tsv` / `smultixcan_eqtl_all.tsv.gz`: S-MultiXcan genes across tissues
+- `SUMMARY.md`: counts, thresholds and top genes
+- (local only, not in git) `spredixcan_eqtl_all.tsv.gz`: every gene–tissue test
+
+Significance: Bonferroni 0.05 / (N genes × M tissues) for S-PrediXcan and 0.05 / N genes for S-MultiXcan.
+
+Column meanings (S-PrediXcan):
+
+| Column | Meaning |
+|---|---|
+| `gene` | Ensembl ID |
+| `gene_name` | HUGO gene name |
+| `zscore` | S-PrediXcan association z-score for the gene |
+| `effect_size` | Effect size (when available) |
+| `pvalue` | P-value of the z-score |
+| `var_g` | Variance of predicted expression, W' G W (W = SNP weights, G = covariance) |
+| `pred_perf_r2` | R² of the tissue model's prediction of measured expression |
+| `pred_perf_pval` / `pred_perf_qval` | P-/q-value of that prediction performance |
+| `n_snps_used` | GWAS SNPs used in the S-PrediXcan analysis |
+| `n_snps_in_cov` | SNPs in the covariance matrix |
+| `n_snps_in_model` | SNPs in the model |
+| `best_gwas_p` / `largest_weight` | Smallest GWAS p among model SNPs / largest model weight |
 
 ## Web app
 
-A small web front end searches public GWAS repositories, downloads the chosen dataset and runs this
-pipeline on it, ending at gene-level results.
+A small web front end searches public GWAS repositories, downloads a dataset and runs this pipeline on it.
 
 ```bash
-bash webapp/start.sh          # then open http://localhost:8000
+bash webapp/start.sh          # then open http://localhost:8000 on the machine running it
 ```
 
 1. **Search**: disease name (English) across FinnGen R12, Pan-UK Biobank (per-ancestry analyses) and the
    GWAS Catalog (studies with full summary statistics; harmonised hg38 files preferred). Filter by ancestry.
-2. **Configure**: the app resolves the download URL, genome build (from GWAS Catalog metadata), column
-   mapping (auto-detected, editable) and case/control counts; choose eQTL/sQTL, tissues and
-   full vs fast mode (fast = no summary imputation, about 1 h instead of 10+ h).
-3. **Run**: writes `config/traits/<ID>.yaml` and queues the run. Runs execute one at a time (each
-   imputation job peaks at ~6-7 GB RAM); the queue also waits for runs started from the command line.
-4. **Results**: S-MultiXcan and S-PrediXcan gene-level tables with Bonferroni flags, gene search and
-   TSV download.
+2. **Configure**: download URL, genome build (from GWAS Catalog metadata), column mapping (auto-detected,
+   editable) and case/control counts are filled in; choose eQTL/sQTL, tissues, full or fast mode.
+3. **Run**: writes `config/traits/<ID>.yaml` and queues the run (one pipeline at a time).
+4. **Results**: S-MultiXcan and S-PrediXcan gene-level tables with Bonferroni flags and TSV download.
 
-Network hosts used: `storage.googleapis.com` (FinnGen), `pan-ukb-us-east-1.s3.amazonaws.com` (Pan-UKBB),
-`ftp.ebi.ac.uk` (GWAS Catalog), `zenodo.org` (reference bundle). Catalog tables are cached in
-`raw_gwas/_catalogs/` for 30 days.
-
-## Steps
-
-```
-raw GWAS (any layout, any build)
-  │ download      fetch input.url if the file is missing
-  │ standardize   map columns (preset + overrides), derive missing beta/SE/z/p, drop rows without
-  │               ACGT alleles → bcftools sort + tabix → work/<id>/00_gwasvcf/<id>.<build>.vcf.gz
-  │ export        bcftools query (+ optional -i filter / -r regions, autosomes by default)
-  │               → MetaXcan input table
-  │ harmonize     gwas_parsing.py: liftover to hg38 when needed, align alleles to the 1000G/GTEx panel
-  │               → harmonized table + harmonized hg38 GWAS-VCF (for cross-trait merging)
-  │ impute        summary-statistics imputation, 22 chromosomes × 10 sub-batches, run in parallel
-  │ postprocess   merge imputed batches
-  │ spredixcan    S-PrediXcan in every tissue (eqtl and/or sqtl)
-  │ smultixcan    S-MultiXcan across tissues
-  ▼ summarize     Bonferroni tables + results/<id>/SUMMARY.md
-```
-
-Every step skips work whose output already exists, so an interrupted run can simply be restarted.
-
-## Usage
-
-```bash
-python twas.py run config/traits/CAD_CARDIoGRAMplusC4D.yaml                  # everything
-python twas.py run config/traits/LSC_FinnGen_R12.yaml --steps standardize export harmonize
-python twas.py run config/traits/IPF_FinnGen_R12.yaml --from spredixcan      # resume from a step
-python twas.py run config/traits/*.yaml                                      # several traits
-python twas.py compare config/traits/LSC_FinnGen_R12.yaml config/traits/CAD_CARDIoGRAMplusC4D.yaml
-python twas.py presets                                                       # known input layouts
-bash run_detached.sh config/traits/CAD_CARDIoGRAMplusC4D.yaml                # background run
-```
-
-`compare` writes `results/cross_trait/`: a gene × trait S-MultiXcan p-value matrix, genes significant
-in ≥ 2 traits, and a `bcftools merge` of the harmonized GWAS-VCFs (one sample column per trait,
-same hg38 alleles), which is useful for colocalization, MR and cross-trait look-ups.
-
-### Adding a disease
-
-1. Copy `config/traits/TEMPLATE.yaml` to `config/traits/<ID>.yaml`.
-2. Set `input.path` (or `input.url`), `input.format` (`cardiogram`, `finngen`, `gwas_catalog`,
-   `pan_ukbb`, `bbj`, `generic`, `custom` with a full `input.columns` map, or `gwasvcf` for files that are
-   already GWAS-VCF), `input.build`,
-   and sample sizes. Use `input.columns` to rename any column the preset gets wrong.
-3. `python twas.py run config/traits/<ID>.yaml`
-
-### Useful bcftools commands on the intermediate files
-
-```bash
-V=work/<ID>/00_gwasvcf/<ID>.hg38.vcf.gz
-bcftools query -i 'FORMAT/LP>7.3' -f '%CHROM\t%POS\t%ID\t%REF\t%ALT[\t%ES\t%LP]\n' $V   # genome-wide significant
-bcftools view -r 6:28000000-34000000 $V                                                # MHC region
-bcftools merge -m none work/A/02_harmonized/A.hg38.vcf.gz work/B/02_harmonized/B.hg38.vcf.gz
-```
-
-### Ancestry
-
-The bundled reference (1000G LD, GTEx v8 models) is European. A trait whose `ancestry` differs from
-`reference.ancestry` is refused unless you give it a matching `reference:` block (LD blocks,
-genotype panel, models) or set `allow_ancestry_mismatch: true`. For East Asian GWAS (e.g. Biobank Japan,
-Chinese cohorts), use EAS LD blocks and an EAS genotype panel at minimum.
+Network hosts used: `ftp.ebi.ac.uk` (GWAS Catalog), `storage.googleapis.com` (FinnGen),
+`pan-ukb-us-east-1.s3.amazonaws.com` (Pan-UKBB), `zenodo.org` (reference bundle).
 
 ## Setup
 
 ```bash
 git clone https://github.com/hakyimlab/MetaXcan
 git clone https://github.com/hakyimlab/summary-gwas-imputation
-conda env create -f envs_metaxcan.yaml        # S-PrediXcan / S-MultiXcan, runs twas.py
+conda env create -f envs_metaxcan.yaml        # S-PrediXcan / S-MultiXcan, runs twas.py and the web app
 conda env create -f envs_gwasimputation.yaml  # harmonization and imputation
 conda env create -f envs_vcftools.yaml        # bcftools / htslib
 mkdir -p data && (cd data && curl -L "https://zenodo.org/api/records/3657902/files/sample_data.tar/content" | tar -xf -)
 ```
 
-Paths to the interpreters, bcftools and data live in `config/pipeline.yaml`.
+The Zenodo bundle (16.7 GB) provides the reference data: 1000G EUR genotype panel and LD blocks,
+liftover chains, GTEx v8 MASHR eQTL/sQTL models and covariances. Paths to the interpreters, bcftools
+and data live in `config/pipeline.yaml`.
+
+## Adding a disease or dataset
+
+1. Copy `config/traits/TEMPLATE.yaml` to `config/traits/<ID>.yaml` (or use the web app).
+2. Set `input.path` / `input.url`, `input.format` (`finngen`, `gwas_catalog`, `igap`, `pan_ukbb`, `bbj`,
+   `generic`, `custom` with a full `input.columns` map, or `gwasvcf`), `input.build` and sample sizes.
+   `input.columns` can rename any column, including per-variant `n_cases` / `n_controls`.
+3. `python twas.py run config/traits/<ID>.yaml`
+
+`python twas.py presets` lists the built-in layouts.
+
+### Useful bcftools commands on the intermediate files
+
+```bash
+V=work/<ID>/00_gwasvcf/<ID>.hg38.vcf.gz
+bcftools query -i 'FORMAT/LP>7.3' -f '%CHROM\t%POS\t%ID\t%REF\t%ALT[\t%ES\t%LP]\n' $V   # genome-wide significant
+bcftools view -r 19:44000000-46500000 $V                                                # APOE region
+bcftools merge -m none work/A/02_harmonized/A.hg38.vcf.gz work/B/02_harmonized/B.hg38.vcf.gz
+```
+
+`compare` writes `results/cross_trait/`: a gene × dataset S-MultiXcan p-value matrix, genes significant
+in ≥ 2 datasets, and a `bcftools merge` of the harmonized GWAS-VCFs (same hg38 alleles).
 
 ## Notes
 
-- Raw rows whose alleles are not A/C/G/T strings (e.g. indels coded `I`/`D`) are dropped at
-  `standardize`, because they cannot be matched to the reference panel.
-- GWAS-VCF convention: ALT = effect allele, `ES`/`EZ` refer to ALT. Before harmonization REF is the
-  study's other allele, not a reference-genome check. The harmonized VCF uses panel REF/ALT.
-- Bonferroni: S-PrediXcan 0.05 / (gene–tissue tests); S-MultiXcan 0.05 / genes.
-
-## Results
-
-`results/<ID>/SUMMARY.md` and tables:
-`spredixcan_<type>_significant.tsv`, `smultixcan_<type>_significant.tsv`, `smultixcan_<type>_all.tsv.gz`
-(full per-tissue S-PrediXcan tables are kept locally in `results/<ID>/spredixcan_<type>_all.tsv.gz`).
-
-Column meanings (S-PrediXcan): `gene` Ensembl ID; `gene_name` HUGO symbol; `zscore`; `pvalue`;
-`var_g` predicted expression variance (W'GW); `pred_perf_r2` / `pred_perf_pval` model performance;
-`n_snps_used` / `n_snps_in_cov` / `n_snps_in_model` SNP counts.
+- **APOE region**: the APOE locus (chr19 ~44.9 Mb) dominates AD GWAS and produces many significant
+  genes through LD (APOE, APOC1, TOMM40, NECTIN2, ...). Interpret genes in this region jointly. For a
+  sensitivity analysis without it, add to the trait config (and use a new `id`):
+  `vcf_filter: 'CHROM!="19" || POS<43900000 || POS>45900000'` (coordinates are in the input file's
+  build: this window is hg38; for hg19 inputs such as Kunkle 2019 use 44400000–46400000).
+- Raw rows whose alleles are not A/C/G/T strings (e.g. indels coded `I`/`D`) are dropped at `standardize`.
+- GWAS-VCF convention: ALT = effect allele. The harmonized VCF uses panel REF/ALT.
+- Ancestry: the reference is European. A trait whose `ancestry` differs is refused unless it supplies a
+  matching `reference:` block or sets `allow_ancestry_mismatch: true`.

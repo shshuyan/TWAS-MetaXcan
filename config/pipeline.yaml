@@ -16,6 +16,7 @@ tools:
 njobs: 2                  # parallel imputation / S-PrediXcan jobs; each imputation job peaks at ~6-7 GB RAM (reference genotypes)
 alpha: 0.05               # family-wise alpha for Bonferroni
 write_harmonized_vcf: true
+example_tissues: [Whole_Blood]   # full S-PrediXcan tables copied to results/ (as in the MetaXcan tutorial)
 
 imputation:
   window: 100000

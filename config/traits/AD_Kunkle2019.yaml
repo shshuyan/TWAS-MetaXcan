@@ -1,0 +1,18 @@
+# Alternative: clinically diagnosed late-onset AD only (no proxy cases).
+# Kunkle et al. 2019, Nat Genet 51:414 (IGAP stage 1), GWAS Catalog GCST007511. GRCh37 coordinates.
+id: AD_Kunkle2019
+description: Late-onset Alzheimer's disease, Kunkle et al. 2019 (IGAP stage 1, 21,982 cases / 41,944 controls), GWAS Catalog GCST007511.
+ancestry: EUR
+input:
+  path: ${raw_dir}/AD_Kunkle2019/Kunkle_etal_Stage1_results.txt
+  url: https://ftp.ebi.ac.uk/pub/databases/gwas/summary_statistics/GCST007001-GCST008000/GCST007511/Kunkle_etal_Stage1_results.txt
+  format: igap
+  build: hg19
+  separator: "\\s+"     # space-separated; no allele-frequency column (filled from the reference panel)
+  n_cases: 21982
+  n_controls: 41944
+  sample_size: 63926
+  source: GWAS Catalog GCST007511
+model_types: [eqtl]
+tissues: all
+skip_imputation: false

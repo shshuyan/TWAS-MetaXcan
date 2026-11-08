@@ -29,6 +29,12 @@ def summarize(cfg):
     for mtype in cfg.trait.get("model_types", ["eqtl"]):
         unit = "gene" if mtype == "eqtl" else "intron"
         sp = _load_spredixcan(cfg, mtype)
+        # Same layout as the MetaXcan tutorial's "Gene level results" (one tissue, all S-PrediXcan columns)
+        for t in cfg.pipe.get("example_tissues", ["Whole_Blood"]):
+            src = os.path.join(cfg.spredixcan_dir(mtype), f"{cfg.trait_id}__PM__{t}.csv")
+            if os.path.exists(src):
+                pd.read_csv(src).sort_values("pvalue").to_csv(
+                    os.path.join(cfg.results, f"spredixcan_{mtype}_{t}.csv"), index=False)
         thr = alpha / len(sp)
         sig = sp[sp.pvalue < thr]
         sp.to_csv(os.path.join(cfg.results, f"spredixcan_{mtype}_all.tsv.gz"), sep="\t", index=False)

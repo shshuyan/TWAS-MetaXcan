@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 """Config-driven TWAS pipeline.
 
-  python twas.py run config/traits/CAD_CARDIoGRAMplusC4D.yaml            # all steps
+  python twas.py run config/traits/AD_Bellenguez2022.yaml                # all steps
   python twas.py run config/traits/X.yaml --steps standardize export     # some steps
   python twas.py run config/traits/*.yaml                                # several traits in turn
-  python twas.py compare config/traits/A.yaml config/traits/B.yaml        # cross-trait genes + merged VCF
+  python twas.py compare config/traits/AD_Bellenguez2022.yaml config/traits/AD_Kunkle2019.yaml  # cross-dataset
   python twas.py presets                                                  # list input formats
 """
 import argparse
