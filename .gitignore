@@ -7,3 +7,10 @@ summary-gwas-imputation/
 __pycache__/
 results/*/spredixcan_*_all.tsv.gz
 logs/
+config/rechecks/local*.yaml
+results/local_rechecks/
+.pytest_cache/
+config/drug_screens/local*.yaml
+results/local_drug_screens/
+config/traits/local*.yaml
+results/*/drug_screen*/

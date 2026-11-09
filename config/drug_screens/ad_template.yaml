@@ -1,0 +1,41 @@
+# TWAS-led discovery: no preselected candidates and no GEO input.
+# ${results} is supplied by the pipeline hook. For standalone use, replace it
+# with an actual results directory in your own local*.yaml config.
+disease: AD
+input_kind: real_twas
+output: ${results}/drug_screen
+alpha: 0.05
+permutations: 10000
+seed: 20261109
+twas:
+  model_type: eqtl
+  complete_tested_results: true
+  # Confirm the GWAS beta/Z trait coding before declaring this orientation.
+  trait_direction: higher_is_AD_risk
+  spredixcan: ${results}/spredixcan_eqtl_all.tsv.gz
+  smultixcan: ${results}/smultixcan_eqtl_all.tsv.gz
+  tissues: [Brain_Cortex, Brain_Hippocampus]
+  primary_tissue: Brain_Cortex
+  alpha: 0.05
+  # BH significant in the prespecified single-tissue tests AND joint Bonferroni.
+  # false retains joint results as annotation, using single-tissue BH alone.
+  require_joint_significance: true
+  exclude_direction_conflicts: true
+  minimum_genes_per_direction: 10
+  # Keep all eligible genes by default; no automatic top100/200 truncation.
+  max_genes_per_direction: null
+primary:
+  source: lincs
+  cell: NEU
+lincs:
+  signatures: ${root}/work/drug-screen-inputs/neural_lincs_top250.jsonl
+  gene_universe: ${root}/work/drug-screen-inputs/lincs_gene_universe.tsv
+  gene_column: gene
+  compound_only: true
+  cells: [NEU, NPC]
+# Optional secondary legacy CMap. Delete this block if unavailable.
+# Results stay separated by cell; CMap names are not merged with LINCS IDs.
+cmap:
+  matrix: ${root}/work/drug-screen-inputs/cmap_rank_complete.h5
+  gene_mapping: ${root}/work/drug-screen-inputs/cmap_gene_mapping.tsv
+  rank_direction: lower_is_up

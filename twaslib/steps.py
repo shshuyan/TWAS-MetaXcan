@@ -10,7 +10,7 @@ from . import gwasvcf
 from .config import LIFTOVER_CHAINS
 
 STEPS = ["download", "standardize", "export", "harmonize", "impute", "postprocess",
-         "spredixcan", "smultixcan", "summarize"]
+         "spredixcan", "smultixcan", "summarize", "drug_screen"]
 
 
 def _done(path, force):
@@ -262,6 +262,20 @@ def step_smultixcan(cfg, force=False):
 def step_summarize(cfg, force=False):
     from .summarize import summarize
     summarize(cfg)
+
+
+def step_drug_screen(cfg, force=False):
+    """Optional whole-library discovery from signed TWAS results."""
+    setting = cfg.trait.get("drug_screen", {})
+    if not setting.get("enabled", False):
+        logging.info("  drug_screen not enabled")
+        return
+    from .drug_screen import reuse_screen, run_drug_screen
+    variables = {"trait_id": cfg.trait_id, "results": cfg.results, "work": cfg.work}
+    if reuse_screen(setting["config"], variables, force):
+        logging.info("  unchanged completed TWAS drug screen")
+        return
+    run_drug_screen(setting["config"], variables=variables)
 
 
 def run_steps(cfg, steps, force=False):

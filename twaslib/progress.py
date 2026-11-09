@@ -35,6 +35,14 @@ def progress(cfg):
     for m in cfg.trait.get("model_types", ["eqtl"]):
         steps.append({"name": f"smultixcan ({m})", "done": _exists(cfg.smultixcan_out(m))})
     steps.append({"name": "summarize", "done": _exists(os.path.join(cfg.results, "SUMMARY.md"))})
+    screen = cfg.trait.get("drug_screen", {})
+    if screen.get("enabled"):
+        from .drug_screen import reuse_screen
+        try:
+            done = reuse_screen(screen["config"], {"trait_id": cfg.trait_id, "results": cfg.results, "work": cfg.work})
+            steps.append({"name": "drug_screen", "done": done})
+        except (SystemExit, ValueError, OSError, KeyError) as exc:
+            steps.append({"name": "drug_screen", "done": False, "detail": str(exc)})
     n = sum(bool(s["done"]) for s in steps)
     current = next((s["name"] for s in steps if not s["done"]), None)
     return {"steps": steps, "done": n, "total": len(steps), "current": current, "finished": current is None}

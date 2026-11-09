@@ -139,6 +139,46 @@ bcftools merge -m none work/A/02_harmonized/A.hg38.vcf.gz work/B/02_harmonized/B
 `compare` writes `results/cross_trait/`: a gene × dataset S-MultiXcan p-value matrix, genes significant
 in ≥ 2 datasets, and a `bcftools merge` of the harmonized GWAS-VCFs (same hg38 alleles).
 
+## TWAS-led AD drug discovery (optional extension)
+
+The discovery path is **GWAS → S-PrediXcan → S-MultiXcan → signed tissue-specific
+TWAS queries → LINCS/CMap → candidate drugs**. It requires neither a preselected
+drug list nor GEO differential expression. It screens every compound in the supplied
+reference and configured cells; it does not claim complete worldwide LINCS coverage.
+
+S-MultiXcan supplies joint association evidence. Direction comes only from
+S-PrediXcan Z-scores in **prespecified tissues**, with GWAS coding explicitly
+confirmed as higher trait = higher AD risk. The signature is a genetic expression
+association, not measured AD up/down expression. Do not use joint `z_mean` as a
+universal direction. All TWAS input rows are retained; direction conflicts and
+insufficient queries are reported without automatic threshold relaxation.
+
+```bash
+cp config/drug_screens/ad_template.yaml config/drug_screens/local_ad.yaml
+# Set actual full TWAS result paths and local perturbation reference paths.
+# In standalone mode, replace ${results} with the real results directory.
+python twas.py drug-screen config/drug_screens/local_ad.yaml
+```
+
+To run automatically after TWAS summarization, add to the AD trait YAML:
+
+```yaml
+drug_screen:
+  enabled: true
+  config: ${root}/config/drug_screens/local_ad.yaml
+```
+
+Then `python twas.py run config/traits/AD_Bellenguez2022.yaml` includes the new
+`drug_screen` step after `summarize`. Its hook supplies `${results}`, `${work}` and
+`${trait_id}`. If upstream results already exist, run only
+`--steps drug_screen`. The step is disabled for traits without this setting.
+
+The output includes `candidate_drugs.tsv/json`, all screened groups, complete
+annotated TWAS tables, per-condition evidence and a Chinese report. Candidates must
+pass the predeclared primary tissue/cell/source after BH across **all tested
+source × tissue × drug × cell groups**; secondary contexts remain separate.
+No LLM/API key is used. See [configuration, methods and limitations](docs/twas_drug_screen.md).
+
 ## Notes
 
 - **APOE region**: the APOE locus (chr19 ~44.9 Mb) dominates AD GWAS and produces many significant

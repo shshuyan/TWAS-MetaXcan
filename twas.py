@@ -32,9 +32,17 @@ def main():
     c.add_argument("--model_type", default="eqtl")
     c.add_argument("--out", default=os.path.join(config.ROOT, "results", "cross_trait"))
     sub.add_parser("presets", help="list input format presets")
+    d = sub.add_parser("drug-screen", help="discover compounds from signed TWAS results across LINCS/CMap; no shortlist/GEO required")
+    d.add_argument("config", help="TWAS drug-screen YAML; paths relative to this file")
+    d.add_argument("--output", help="new output directory; must not already exist")
     a = ap.parse_args()
 
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
+    if a.cmd == "drug-screen":
+        from twaslib.drug_screen import run_drug_screen
+        result = run_drug_screen(a.config, a.output)
+        print(f"Completed TWAS drug screen: {result}")
+        return
     if a.cmd == "presets":
         for k, v in PRESETS.items():
             print(f"{k}: {v}")
