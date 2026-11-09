@@ -139,40 +139,6 @@ bcftools merge -m none work/A/02_harmonized/A.hg38.vcf.gz work/B/02_harmonized/B
 `compare` writes `results/cross_trait/`: a gene × dataset S-MultiXcan p-value matrix, genes significant
 in ≥ 2 datasets, and a `bcftools merge` of the harmonized GWAS-VCFs (same hg38 alleles).
 
-## Optional AD candidate evidence recheck (local extension)
-
-After an upstream drug screen, a frozen candidate list can be checked against AD
-genetic gene-set enrichment and CMap/neural LINCS expression reversal. The checks
-remain separate, distinguish missing from negative results, and do not claim causal
-targets or independent efficacy when reusing the screening reference.
-
-```bash
-# Edit a local copy of the example; no OpenAI/DeepSeek key is needed.
-cp config/rechecks/ad_template.yaml config/rechecks/local_ad.yaml
-python twas.py recheck config/rechecks/local_ad.yaml
-# A new output directory is required for a changed/repeated run.
-python twas.py recheck config/rechecks/local_ad.yaml --output /path/to/new-output
-```
-
-The example is intended for the pipeline hook's `${results}` variable. For the
-standalone command, replace that variable with the actual full TWAS result path.
-Inputs may instead explicitly choose `genetics.mode: gwas_mapped`; this uses
-exploratory locus-mapped gene overrepresentation and is not a completed TWAS.
-
-To opt into the last step of `twas.py run`, add this to a trait YAML:
-
-```yaml
-candidate_recheck:
-  enabled: true
-  config: ${root}/config/rechecks/local_ad.yaml
-```
-
-The hook exposes `${results}`, `${work}`, and `${trait_id}` to the recheck config.
-It can also be invoked alone with `--steps candidate_recheck` after upstream data
-are available. Existing traits without this setting skip the step. See
-[the method and local test plan](docs/ad_candidate_recheck_design.md) and
-[configuration/output details](docs/ad_candidate_recheck_usage.md).
-
 ## Notes
 
 - **APOE region**: the APOE locus (chr19 ~44.9 Mb) dominates AD GWAS and produces many significant

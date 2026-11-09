@@ -35,17 +35,6 @@ def progress(cfg):
     for m in cfg.trait.get("model_types", ["eqtl"]):
         steps.append({"name": f"smultixcan ({m})", "done": _exists(cfg.smultixcan_out(m))})
     steps.append({"name": "summarize", "done": _exists(os.path.join(cfg.results, "SUMMARY.md"))})
-    recheck = cfg.trait.get("candidate_recheck", {})
-    if recheck.get("enabled"):
-        from .recheck_inputs import load_settings
-        try:
-            settings, path = load_settings(recheck["config"], {"trait_id": cfg.trait_id, "results": cfg.results, "work": cfg.work})
-            out = settings["output"]
-            if not os.path.isabs(out):
-                out = os.path.join(str(path.parent), out)
-            steps.append({"name": "candidate_recheck", "done": _exists(os.path.join(out, "summary.json"))})
-        except (ValueError, OSError, KeyError) as exc:
-            steps.append({"name": "candidate_recheck", "done": False, "detail": str(exc)})
     n = sum(bool(s["done"]) for s in steps)
     current = next((s["name"] for s in steps if not s["done"]), None)
     return {"steps": steps, "done": n, "total": len(steps), "current": current, "finished": current is None}
