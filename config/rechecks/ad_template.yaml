@@ -1,0 +1,44 @@
+# All relative input/output paths resolve relative to THIS config, not shell cwd.
+# Copy to a local*.yaml file. Large data and local configs stay out of Git.
+disease: AD
+candidates: ${root}/work/recheck-inputs/candidate_compounds.json
+target_context: ${root}/work/recheck-inputs/target_context.json
+output: ${root}/results/local_rechecks/ad-run-01
+alpha: 0.05
+permutations: 10000
+seed: 20261108
+query_size: 100
+query_fdr: 0.05
+minimum_cohorts: 2
+genetics:
+  mode: twas
+  complete_tested_results: true
+  # Full results, NOT significant-only: required to define tested background.
+  # ${results} is provided by the optional pipeline hook only; for the standalone
+  # command use an actual path or ${root}/results/<TRAIT>/... instead.
+  path: ${results}/smultixcan_eqtl_all.tsv.gz
+  gene_column: gene_name
+  pvalue_column: pvalue
+  alpha: 0.05
+cohorts:
+  - id: discovery
+    role: discovery
+    differential_expression: ${root}/work/recheck-inputs/discovery_de.tsv
+  - id: validation
+    role: validation
+    differential_expression: ${root}/work/recheck-inputs/validation_de.tsv
+lincs:
+  signatures: ${root}/work/recheck-inputs/neural_lincs_top250.jsonl
+  gene_universe: ${root}/work/recheck-inputs/lincs_gene_universe.tsv
+  gene_column: gene
+  cells: [NEU, NPC]
+  primary_cell: NEU
+  reused_from_upstream_screen: true
+cmap:
+  matrix: ${root}/work/recheck-inputs/cmap_rank.h5
+  gene_mapping: ${root}/work/recheck-inputs/cmap_gene_mapping.tsv
+  rank_direction: lower_is_up
+  tail_size: 250
+# Only manually verified names/aliases; no fuzzy matching.
+aliases:
+  BRD-A19037878: [trichostatin A]

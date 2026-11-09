@@ -10,7 +10,7 @@ from . import gwasvcf
 from .config import LIFTOVER_CHAINS
 
 STEPS = ["download", "standardize", "export", "harmonize", "impute", "postprocess",
-         "spredixcan", "smultixcan", "summarize"]
+         "spredixcan", "smultixcan", "summarize", "candidate_recheck"]
 
 
 def _done(path, force):
@@ -262,6 +262,39 @@ def step_smultixcan(cfg, force=False):
 def step_summarize(cfg, force=False):
     from .summarize import summarize
     summarize(cfg)
+
+
+def step_candidate_recheck(cfg, force=False):
+    """Opt-in post-screen evidence checks. Never silently replace a genetic source."""
+    setting = cfg.trait.get("candidate_recheck")
+    if not setting or not setting.get("enabled", False):
+        logging.info("  candidate_recheck not enabled")
+        return
+    from .candidate_recheck import run_recheck
+    from .recheck_inputs import load_settings, sha256
+    evidence_config = setting["config"]
+    variables = {"trait_id": cfg.trait_id, "results": cfg.results, "work": cfg.work}
+    evidence, resolved_path = load_settings(evidence_config, variables)
+    out = evidence["output"]
+    if not os.path.isabs(out):
+        out = os.path.join(str(resolved_path.parent), out)
+    marker = os.path.join(out, "summary.json")
+    if os.path.exists(marker):
+        # Reusing stale evidence after input/config changes would invalidate review.
+        import json
+        manifest_path = os.path.join(out, "input_manifest.json")
+        if not os.path.exists(manifest_path):
+            raise SystemExit("Recheck completion marker lacks input manifest: " + out)
+        with open(manifest_path) as fh:
+            manifest = json.load(fh)
+        changed = [r["path"] for r in manifest if not os.path.isfile(r["path"]) or sha256(r["path"]) != r["sha256"]]
+        with open(os.path.join(out, "resolved_config.json")) as fh:
+            old_config = json.load(fh)
+        if changed or old_config != evidence or force:
+            raise SystemExit("Recheck inputs/config/code changed or --force requested. Set a NEW evidence output directory; old evidence is preserved.")
+        logging.info("  unchanged completed candidate recheck: %s", out)
+        return
+    run_recheck(evidence_config, variables=variables)
 
 
 def run_steps(cfg, steps, force=False):

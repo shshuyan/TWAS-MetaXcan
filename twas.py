@@ -32,9 +32,17 @@ def main():
     c.add_argument("--model_type", default="eqtl")
     c.add_argument("--out", default=os.path.join(config.ROOT, "results", "cross_trait"))
     sub.add_parser("presets", help="list input format presets")
+    v = sub.add_parser("recheck", help="locally recheck frozen AD candidates using genetics and perturbation evidence")
+    v.add_argument("config", help="candidate recheck YAML; paths relative to this file")
+    v.add_argument("--output", help="new output directory; must not already exist")
     a = ap.parse_args()
 
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
+    if a.cmd == "recheck":
+        from twaslib.candidate_recheck import run_recheck
+        result = run_recheck(a.config, a.output)
+        print(f"Completed AD candidate recheck: {result}")
+        return
     if a.cmd == "presets":
         for k, v in PRESETS.items():
             print(f"{k}: {v}")
