@@ -57,7 +57,7 @@
 - Test: `tests/test_continuous_screen.py`
 
 **Interfaces:**
-- Produces: `Level5Reference`, `weighted_cosine_scores`, `permutation_calibration`, and `screen_disease(config, reference, output) -> Path`.
+- Produces: `Level5Reference`, `weighted_cosine_scores`, `matched_signature_calibration`, sensitivity `permutation_calibration`, and `screen_disease(config, reference, output) -> Path`.
 - Consumes: GCTX, signature/gene/compound metadata, complete tissue-specific S-PrediXcan table.
 
 - [ ] Write failing tests for both GCTX orientations, metadata filtering, hand-computed weighted cosine, median aggregation, empirical P, primary-only global BH, secondary non-promotion and insufficient overlap.

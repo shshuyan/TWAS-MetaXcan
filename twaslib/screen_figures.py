@@ -133,7 +133,7 @@ def _permutation(frames):
         else: _empty(ax, disease)
         _panel(ax, label)
     fig.suptitle("Observed reversal and permutation calibration", weight="bold"); fig.tight_layout()
-    return fig, pd.DataFrame(rows), "Observed scores versus matched gene-label permutation P values; dashed lines show finite permutation resolution."
+    return fig, pd.DataFrame(rows), "Observed scores versus matched signature-label permutation P values; dashed lines show finite permutation resolution."
 
 
 def _prioritization(frames):
@@ -237,6 +237,20 @@ def render_figure_suite(batch_output, formats=("png", "svg", "pdf")):
         raise ValueError("formats must be a nonempty subset of png, svg, pdf")
     figure_dir = batch / "figures"
     figure_dir.mkdir(exist_ok=True)
+    runtime_path = batch / "runtime_versions.json"
+    if runtime_path.is_file():
+        runtime = json.loads(runtime_path.read_text())
+        runtime["matplotlib"] = matplotlib.__version__
+        runtime_path.write_text(json.dumps(runtime, indent=2, sort_keys=True) + "\n")
+    input_manifest_path = batch / "input_manifest.json"
+    if input_manifest_path.is_file():
+        inputs = json.loads(input_manifest_path.read_text())
+        role = "implementation:screen_figures.py"
+        inputs = [item for item in inputs if item.get("role") != role]
+        implementation = Path(__file__).resolve()
+        inputs.append({"role": role, "file": str(implementation), "bytes": implementation.stat().st_size,
+                       "sha256": sha256(implementation)})
+        input_manifest_path.write_text(json.dumps(inputs, indent=2, sort_keys=True) + "\n")
     generated, captions = [], []
     for number, (stem, builder) in enumerate(zip(FIGURES, BUILDERS), 1):
         fig, data, caption = builder(frames)

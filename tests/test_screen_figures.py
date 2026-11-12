@@ -1,5 +1,6 @@
 """Figure-suite outputs are stable artifacts, not alternate analyses."""
 from pathlib import Path
+import json
 import tempfile
 import unittest
 import warnings
@@ -34,6 +35,8 @@ class ScreenFigureTests(unittest.TestCase):
             sensitivity = pd.read_csv(batch / "figures" / "figure_08_context_sensitivity.data.tsv", sep="\t")
             self.assertLessEqual(consistency.groupby("disease").pert_id.nunique().max(), 10)
             self.assertLessEqual(sensitivity.groupby("disease").compound_id.nunique().max(), 10)
+            inputs = json.loads((batch / "input_manifest.json").read_text())
+            self.assertTrue(any(item["role"] == "implementation:screen_figures.py" for item in inputs))
 
     def test_empty_candidate_table_renders_an_explicit_no_data_panel(self):
         with tempfile.TemporaryDirectory() as tmp:

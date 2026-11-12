@@ -161,7 +161,8 @@ python twas.py four-disease-screen config/drug_screens/four_disease_level5.yaml
 It reads GSE92742 Level 5 MODZ in bounded signature blocks and uses all finite TWAS genes shared with
 CMap. TWAS Z is symmetrically clipped at 5 and weighted by `min(|Z|, 5) / 5` in a weighted cosine.
 Negative is reversal. Signatures are aggregated by the median within compound × cell before matched
-gene-label permutations. One BH family per disease covers every compound × primary-cell test. A
+signature-label permutations (cell/dose/time hierarchy with replicate count preserved). This avoids
+rescoring the 473,647 × 12,328 matrix for every null draw. One BH family per disease covers every compound × primary-cell test. A
 candidate compound must have at least one primary-cell test with global q < .05 and no positive score
 in any tested primary cell; it appears once in the disease candidate table. Secondary cells remain
 separate sensitivity evidence.

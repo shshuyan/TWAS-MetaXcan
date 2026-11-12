@@ -9,7 +9,8 @@ import numpy as np
 import pandas as pd
 
 from twaslib.cmap_level5 import Level5Reference
-from twaslib.continuous_screen import permutation_calibration, screen_disease, weighted_cosine_scores
+from twaslib.continuous_screen import (matched_signature_calibration, permutation_calibration,
+                                       screen_disease, weighted_cosine_scores)
 
 
 def screening_fixture(root):
@@ -61,6 +62,16 @@ class ContinuousStatisticsTests(unittest.TestCase):
         self.assertTrue(np.allclose(observed, [-1]))
         self.assertEqual(empirical_p.tolist(), [1])
 
+    def test_primary_calibration_matches_signature_context_and_group_size(self):
+        scores = np.array([-1, -.9, 1, .9], dtype=float)
+        groups = [[0, 1], [2, 3]]
+        strata = np.array(["NEU|1|24"] * 4)
+        observed, empirical_p = matched_signature_calibration(
+            scores, groups, strata, permutations=99, seed=11,
+        )
+        self.assertTrue(np.allclose(observed, [-.95, .95]))
+        self.assertEqual(empirical_p.tolist(), [.01, 1])
+
     def test_primary_family_fdr_and_secondary_nonpromotion(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
@@ -82,7 +93,9 @@ class ContinuousStatisticsTests(unittest.TestCase):
             self.assertTrue(secondary.q_bh_primary_family.isna().all())
             self.assertFalse(secondary.candidate.any())
             self.assertEqual(len(evidence), 4)
-            self.assertEqual(json.loads((out / "summary.json").read_text())["primary_hypotheses"], 2)
+            summary = json.loads((out / "summary.json").read_text())
+            self.assertEqual(summary["primary_hypotheses"], 2)
+            self.assertIn("signature-label", summary["null"])
 
     def test_too_few_shared_genes_is_auditable_not_relaxed(self):
         with tempfile.TemporaryDirectory() as tmp:

@@ -184,7 +184,7 @@ No LLM/API key is used. See [configuration, methods and limitations](docs/twas_d
 The formal extension runs **AD, lichen simplex chronicus / neurodermatitis, atopic dermatitis, and
 IPF as four independent analyses**. Its primary statistic is weighted cosine similarity between
 clipped tissue-specific S-PrediXcan Z and GSE92742 Level 5 MODZ; negative values indicate reversal.
-Compound × cell medians are calibrated by gene-label permutations, and BH-FDR is applied within each
+Compound × cell medians are calibrated by signature-label permutations matched by cell/dose/time, and BH-FDR is applied within each
 disease across all compound × prespecified-primary-cell hypotheses. Secondary cells never promote a
 candidate. See `config/drug_screens/four_disease_level5.yaml` and the preregistration design in
 `docs/superpowers/specs/2026-11-12-four-disease-cmap-level5-design.md`.

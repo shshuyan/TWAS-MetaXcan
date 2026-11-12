@@ -31,7 +31,7 @@ The immediate deliverable is a deterministic minimum closed loop that proves the
 - TWAS clipping: symmetric absolute cap from config, preregistered at `|Z| = 5` for the main analysis.
 - Gene weights: `min(|TWAS Z|, 5) / 5`; all finite genes shared by TWAS and CMap are used. S-MultiXcan remains annotation and does not determine direction.
 - Compound aggregation: median score over all eligible signatures for each compound × cell; no best-dose selection.
-- Null: deterministic gene-label permutations within configured gene strata, preserving the TWAS Z/weight distribution and the compound/cell aggregation structure. Empirical lower-tail P is `(1 + count(null <= observed)) / (B + 1)`.
+- Null: deterministic signature-label permutations matched hierarchically by cell/dose/time, then cell/time, then cell when an exact stratum has no external signature. The observed signature count per compound × cell is preserved and the current compound is excluded whenever another matched signature exists. This makes the formal 473,647-signature screen bounded-memory; gene-label permutation remains a small-matrix sensitivity function. Empirical lower-tail P is `(1 + count(null <= observed)) / (B + 1)`.
 - Multiplicity: one BH family per disease across all tested compound × primary-cell hypotheses. Secondary cells receive descriptive/sensitivity statistics and cannot promote a primary failure.
 - Formal run default: `B = 10000`, `alpha = 0.05`; `0.05 <= q < 0.10` is exploratory. The demo may use fewer permutations and must record that reduced resolution.
 - Candidate: negative primary score and global primary-family `q < 0.05`. No candidates is a valid result.
@@ -55,7 +55,7 @@ Downloads are resumable, checksum-verified and stored outside Git. A manifest ca
 
 1. `dataset_registry` validates frozen metadata and creates/downloads a checksum-verifiable data snapshot.
 2. `cmap_level5` opens GCTX metadata, resolves matrix orientation, selects compound signatures/cells, maps Entrez IDs to symbols, and streams signature blocks.
-3. `continuous_screen` aligns a disease TWAS vector, computes condition scores, aggregates compound × cell, runs matched permutations, and applies primary-family FDR.
+3. `continuous_screen` aligns a disease TWAS vector, streams condition scores, aggregates compound × cell, runs matched signature-label permutations, and applies primary-family FDR.
 4. `four_disease_screen` runs diseases independently, writes one output tree per disease, and creates a cross-disease comparison containing no pooled ranking.
 5. `screen_figures` creates a fixed figure suite from tidy output tables. Captions state whether inputs are demo or real.
 6. A demo builder writes deterministic mini GCTX/metadata/TWAS fixtures and invokes the exact production APIs.

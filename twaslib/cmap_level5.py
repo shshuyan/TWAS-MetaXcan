@@ -91,12 +91,10 @@ class Level5Reference:
             matrix = handle["/0/DATA/0/matrix"]
             for start in range(0, len(signature_ix), block_size):
                 chosen = signature_ix[start:start + block_size]
-                low, high = int(chosen.min()), int(chosen.max()) + 1
-                local = chosen - low
                 if self.orientation == "genes_by_signatures":
-                    dense = np.asarray(matrix[:, low:high], dtype=np.float32)[gene_ix][:, local].T
+                    dense = np.asarray(matrix[:, chosen], dtype=np.float32)[gene_ix].T
                 else:
-                    dense = np.asarray(matrix[low:high, :], dtype=np.float32)[local][:, gene_ix]
+                    dense = np.asarray(matrix[chosen, :], dtype=np.float32)[:, gene_ix]
                 if not np.isfinite(dense).all():
                     raise ValueError("Level 5 matrix contains nonfinite values in selected block")
                 yield self.signatures.iloc[start:start + len(chosen)].copy(), dense

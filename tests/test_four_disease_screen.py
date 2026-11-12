@@ -84,6 +84,11 @@ class FourDiseaseScreenTests(unittest.TestCase):
             self.assertNotIn("pooled_rank", cross.columns)
             input_manifest = json.loads((out / "input_manifest.json").read_text())
             self.assertTrue(all(len(record["sha256"]) == 64 for record in input_manifest))
+            self.assertTrue(any(record["role"].startswith("implementation:") for record in input_manifest))
+            runtime = json.loads((out / "runtime_versions.json").read_text())
+            self.assertIn("python", runtime)
+            self.assertIn("numpy", runtime)
+            self.assertIn("h5py", runtime)
             output_manifest = json.loads((out / "output_manifest.json").read_text())
             self.assertTrue(any(record["file"] == "AD/candidate_compounds.tsv" for record in output_manifest))
 

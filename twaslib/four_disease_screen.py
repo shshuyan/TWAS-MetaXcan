@@ -1,7 +1,11 @@
 """Orchestrate four independent TWAS × CMap Level 5 disease screens."""
 from pathlib import Path
 import json
+import platform
+import sys
 
+import h5py
+import numpy as np
 import pandas as pd
 import yaml
 
@@ -67,6 +71,9 @@ def run_four_disease_screen(config_path, output=None):
     resolved = {**cfg, "output": str(out), "cmap": {**cmap, **{key: str(value) for key, value in reference_paths.items()}}}
     input_manifest = [_manifest_record(config_path, "batch_config")]
     input_manifest += [_manifest_record(path, "cmap_" + key) for key, path in reference_paths.items()]
+    implementation_paths = [Path(__file__).resolve(), Path(screen_disease.__code__.co_filename).resolve(),
+                            Path(Level5Reference.__init__.__code__.co_filename).resolve()]
+    input_manifest += [_manifest_record(path, "implementation:" + path.name) for path in implementation_paths]
     cross_frames, summaries = [], []
     for disease in DISEASES:
         disease_cfg = {**analysis, **by_disease[disease], "input_kind": cfg.get("input_kind", "unspecified")}
@@ -79,6 +86,7 @@ def run_four_disease_screen(config_path, output=None):
         disease_inputs = [_manifest_record(config_path, "batch_config"),
                           _manifest_record(disease_cfg["twas"], "spredixcan_full")]
         disease_inputs += [_manifest_record(path, "cmap_" + key) for key, path in reference_paths.items()]
+        disease_inputs += [_manifest_record(path, "implementation:" + path.name) for path in implementation_paths]
         (disease_out / "input_manifest.json").write_text(json.dumps(disease_inputs, indent=2, sort_keys=True) + "\n")
         disease_outputs = [_manifest_record(path, "output", disease_out) for path in sorted(disease_out.iterdir())
                            if path.is_file() and path.name != "output_manifest.json"]
@@ -90,6 +98,9 @@ def run_four_disease_screen(config_path, output=None):
 
     (out / "resolved_config.yaml").write_text(yaml.safe_dump(resolved, sort_keys=False, allow_unicode=True))
     (out / "input_manifest.json").write_text(json.dumps(input_manifest, indent=2, sort_keys=True) + "\n")
+    runtime = {"python": sys.version, "platform": platform.platform(), "numpy": np.__version__,
+               "pandas": pd.__version__, "h5py": h5py.__version__, "pyyaml": yaml.__version__}
+    (out / "runtime_versions.json").write_text(json.dumps(runtime, indent=2, sort_keys=True) + "\n")
     cross = pd.concat(cross_frames, ignore_index=True) if cross_frames else pd.DataFrame()
     cross.to_csv(out / "cross_disease_descriptive.tsv", sep="\t", index=False)
     summary = {

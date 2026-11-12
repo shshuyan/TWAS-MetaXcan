@@ -59,6 +59,47 @@ def permutation_calibration(matrix, disease_z, groups, permutations, seed, z_cli
     return observed, (counts + 1) / (permutations + 1), observed_individual
 
 
+def matched_signature_calibration(scores, groups, strata, permutations, seed):
+    """Permute matched signature labels without rescoring the gene matrix.
+
+    `strata` may be one label vector or a hierarchy from strict to broad matching.
+    Each null group preserves the observed replicate count. The current compound's
+    signatures are excluded whenever another matched signature is available.
+    """
+    scores = np.asarray(scores, dtype=float)
+    levels = [np.asarray(strata)] if np.asarray(strata).ndim == 1 else [np.asarray(level) for level in strata]
+    if not len(scores) or any(level.ndim != 1 or len(level) != len(scores) for level in levels):
+        raise ValueError("signature strata must align one-to-one with scores")
+    if not np.isfinite(scores).all() or not isinstance(permutations, int) or permutations < 1:
+        raise ValueError("signature scores must be finite and permutations positive")
+    observed = _group_medians(scores, groups)
+    pools = []
+    all_indices = np.arange(len(scores))
+    for group in groups:
+        excluded = np.zeros(len(scores), dtype=bool)
+        excluded[group] = True
+        group_pools = []
+        for index in group:
+            candidates = np.array([], dtype=int)
+            for level in levels:
+                candidates = all_indices[(level == level[index]) & ~excluded]
+                if len(candidates):
+                    break
+            if not len(candidates):
+                candidates = np.asarray(group, dtype=int)
+            group_pools.append(candidates)
+        pools.append(group_pools)
+    rng = np.random.default_rng(seed)
+    counts = np.zeros(len(groups), dtype=int)
+    for index, group_pools in enumerate(pools):
+        draws = np.column_stack([
+            scores[pool[rng.integers(0, len(pool), size=permutations)]] for pool in group_pools
+        ])
+        null = np.median(draws, axis=1)
+        counts[index] = int(np.count_nonzero(null <= observed[index] + 1e-12))
+    return observed, (counts + 1) / (permutations + 1)
+
+
 def _write_table(path, frame):
     frame.to_csv(path, sep="\t", index=False)
 
@@ -101,7 +142,7 @@ def screen_disease(config, reference, output):
         "minimum_genes": int(config["minimum_genes"]), "z_clip": float(config["z_clip"]),
         "permutations": int(config["permutations"]), "seed": int(config["seed"]),
         "alpha": float(config["alpha"]), "score": "weighted_cosine; negative is reversal",
-        "null": "gene-label permutation within CMap landmark/inferred strata, preserving TWAS Z and weight distribution",
+        "null": "signature-label permutation matched hierarchically by cell/dose/time, cell/time and cell; replicate count preserved",
     }
     if len(twas) < int(config["minimum_genes"]):
         empty = _empty_results()
@@ -114,24 +155,32 @@ def screen_disease(config, reference, output):
         (output / "summary.json").write_text(json.dumps(summary, indent=2, sort_keys=True) + "\n")
         return output
 
-    metadata, matrices = [], []
+    metadata = []
     for block_meta, block in reference.iter_signature_blocks(twas.gene_name.tolist()):
+        block_meta = block_meta.copy()
+        block_meta["score"] = weighted_cosine_scores(
+            block, twas.zscore.to_numpy(float), float(config["z_clip"])
+        )
         metadata.append(block_meta)
-        matrices.append(block)
     sig = pd.concat(metadata, ignore_index=True)
-    matrix = np.vstack(matrices)
     groups = defaultdict(list)
     for index, row in sig.iterrows():
         groups[(str(row.pert_id), str(row.cell_id))].append(index)
     keys = sorted(groups)
     group_indices = [groups[key] for key in keys]
-    observed, pvalues, individual = permutation_calibration(
-        matrix, twas.zscore.to_numpy(float), group_indices,
-        int(config["permutations"]), int(config["seed"]), float(config["z_clip"]),
-        strata=np.array([reference.gene_strata[gene] for gene in twas.gene_name]),
+    dose = sig["pert_dose"].astype(str) if "pert_dose" in sig else pd.Series("", index=sig.index)
+    time = sig["pert_time"].astype(str) if "pert_time" in sig else pd.Series("", index=sig.index)
+    cell = sig.cell_id.astype(str)
+    match_levels = np.vstack([
+        (cell + "|" + dose + "|" + time).to_numpy(),
+        (cell + "|" + time).to_numpy(),
+        cell.to_numpy(),
+    ])
+    individual = sig.score.to_numpy(float)
+    observed, pvalues = matched_signature_calibration(
+        individual, group_indices, match_levels,
+        int(config["permutations"]), int(config["seed"]),
     )
-    sig = sig.copy()
-    sig["score"] = individual
     sig.insert(0, "disease", config["disease"])
     _write_table(output / "signature_evidence.tsv.gz", sig)
 
