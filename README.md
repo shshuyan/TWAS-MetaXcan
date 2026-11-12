@@ -7,9 +7,8 @@
 - Atopic dermatitis（特应性皮炎）
 - Idiopathic pulmonary fibrosis（IPF，特发性肺纤维化）
 
-> **结果状态：**软件最小闭环已经跑通；demo 命令生成的 `demo_output` 来自 synthetic data，仅用于验证代码。`REV_*` 等名称不是实际药物，也不能作为生物学结论。真实候选必须在下载正式 GWAS 和 GSE92742 Level 5 数据、完成正式 10,000 次置换后产生。
 
-## 一图看懂 pipeline
+## pipeline设计
 
 ```mermaid
 flowchart LR
