@@ -1,0 +1,66 @@
+schema_version: 1
+frozen_on: '2026-11-12'
+notes:
+  - URLs and phenotype/sample metadata are frozen for audit; re-review overlap and licences before a formal run.
+  - Large files belong in local scratch or an archive outside Git.
+datasets:
+  - id: AD_GCST90027158
+    disease: AD
+    role: primary_gwas
+    url: https://ftp.ebi.ac.uk/pub/databases/gwas/summary_statistics/GCST90027001-GCST90028000/GCST90027158/harmonised/35379992-GCST90027158-MONDO_0004975.h.tsv.gz
+    filename: gwas/AD/35379992-GCST90027158-MONDO_0004975.h.tsv.gz
+    build: GRCh38
+    ancestry: European
+    cases: 85934
+    controls: 401577
+    accession: GCST90027158
+  - id: LSC_FINNGEN_R12
+    disease: LSC
+    role: primary_gwas
+    url: https://storage.googleapis.com/finngen-public-data-r12/summary_stats/release/finngen_R12_L12_LICHENSIMPLEX.gz
+    filename: gwas/LSC/finngen_R12_L12_LICHENSIMPLEX.gz
+    build: GRCh38
+    ancestry: Finnish-European
+    cases: 1241
+    controls: 432874
+    endpoint: L12_LICHENSIMPLEX
+  - id: ADERM_GCST90244787
+    disease: atopic_dermatitis
+    role: primary_gwas
+    url: https://ftp.ebi.ac.uk/pub/databases/gwas/summary_statistics/GCST90244001-GCST90245000/GCST90244787/GCST90244787_buildGRCh37.tsv.gz
+    filename: gwas/atopic_dermatitis/GCST90244787_buildGRCh37.tsv.gz
+    build: GRCh37
+    ancestry: European
+    sample_size: 864982
+    accession: GCST90244787
+  - id: IPF_FINNGEN_R12
+    disease: IPF
+    role: replication_gwas
+    url: https://storage.googleapis.com/finngen-public-data-r12/summary_stats/release/finngen_R12_IPF.gz
+    filename: gwas/IPF/finngen_R12_IPF.gz
+    build: GRCh38
+    ancestry: Finnish-European
+    cases: 2700
+    controls: 494583
+    endpoint: IPF
+  - id: CMAP_LEVEL5_GCTX
+    role: perturbation_reference
+    url: https://ftp.ncbi.nlm.nih.gov/geo/series/GSE92nnn/GSE92742/suppl/GSE92742_Broad_LINCS_Level5_COMPZ.MODZ_n473647x12328.gctx.gz
+    filename: cmap/GSE92742_Broad_LINCS_Level5_COMPZ.MODZ_n473647x12328.gctx.gz
+    bytes: 21328033748
+    accession: GSE92742
+  - id: CMAP_SIG_INFO
+    role: perturbation_metadata
+    url: https://ftp.ncbi.nlm.nih.gov/geo/series/GSE92nnn/GSE92742/suppl/GSE92742_Broad_LINCS_sig_info.txt.gz
+    filename: cmap/GSE92742_Broad_LINCS_sig_info.txt.gz
+    accession: GSE92742
+  - id: CMAP_PERT_INFO
+    role: compound_metadata
+    url: https://ftp.ncbi.nlm.nih.gov/geo/series/GSE92nnn/GSE92742/suppl/GSE92742_Broad_LINCS_pert_info.txt.gz
+    filename: cmap/GSE92742_Broad_LINCS_pert_info.txt.gz
+    accession: GSE92742
+  - id: CMAP_GENE_INFO
+    role: gene_metadata
+    url: https://ftp.ncbi.nlm.nih.gov/geo/series/GSE92nnn/GSE92742/suppl/GSE92742_Broad_LINCS_gene_info.txt.gz
+    filename: cmap/GSE92742_Broad_LINCS_gene_info.txt.gz
+    accession: GSE92742
