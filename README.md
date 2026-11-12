@@ -179,6 +179,40 @@ pass the predeclared primary tissue/cell/source after BH across **all tested
 source × tissue × drug × cell groups**; secondary contexts remain separate.
 No LLM/API key is used. See [configuration, methods and limitations](docs/twas_drug_screen.md).
 
+## Four-disease TWAS × CMap Level 5 screen
+
+The formal extension runs **AD, lichen simplex chronicus / neurodermatitis, atopic dermatitis, and
+IPF as four independent analyses**. Its primary statistic is weighted cosine similarity between
+clipped tissue-specific S-PrediXcan Z and GSE92742 Level 5 MODZ; negative values indicate reversal.
+Compound × cell medians are calibrated by gene-label permutations, and BH-FDR is applied within each
+disease across all compound × prespecified-primary-cell hypotheses. Secondary cells never promote a
+candidate. See `config/drug_screens/four_disease_level5.yaml` and the preregistration design in
+`docs/superpowers/specs/2026-11-12-four-disease-cmap-level5-design.md`.
+
+Run the deterministic minimum closed loop without downloading the 21.3 GB CMap file:
+
+```bash
+python scripts/run_minimal_four_disease_demo.py --output demo_output/four_disease
+```
+
+This creates a mini-GCTX, four synthetic TWAS inputs, four candidate lists, complete SHA-256
+manifests, Chinese reports, and eight figure families in PNG/SVG/PDF. Every demo report and figure is
+labelled `DEMO / synthetic`; these outputs validate software only and are not biological candidates.
+
+For a real run, use the frozen registry, decompress the archived GCTX into local scratch for HDF5
+random access, produce the four complete S-PrediXcan tables, review phenotype/sample overlap, then run:
+
+```bash
+python twas.py datasets config/datasets/four_disease_public.yaml --list
+python twas.py four-disease-screen config/drug_screens/four_disease_level5.yaml
+```
+
+- Keep the official `.gctx.gz` and checksum files as immutable archive inputs; do not compute from a
+  Google Drive sync mount. A local scratch `.gctx` is the active random-access copy.
+- The included IPF primary CMap cell (`HCC515`) is a proxy, not an ideal primary lung fibroblast.
+- A real result requires the formal `10,000` permutations in the checked-in config; the demo uses
+  `999` to keep the software validation fast and records the resulting P-value resolution.
+
 ## Notes
 
 - **APOE region**: the APOE locus (chr19 ~44.9 Mb) dominates AD GWAS and produces many significant

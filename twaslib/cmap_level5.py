@@ -42,12 +42,18 @@ class Level5Reference:
         if {gene_id, gene_symbol} - set(genes):
             raise ValueError("gene_info requires gene ID and symbol columns")
         alias = dict(zip(genes[gene_id].astype(str), genes[gene_symbol].map(symbol)))
+        stratum_column = "pr_is_lm" if "pr_is_lm" in genes else None
+        strata_by_id = (dict(zip(genes[gene_id].astype(str), genes[stratum_column].map(
+            lambda value: "landmark" if str(value).strip().lower() in {"1", "true", "landmark"} else "inferred"
+        ))) if stratum_column else {})
         mapped = [alias.get(gene_id_value, "") for gene_id_value in self.row_ids]
         valid = [g for g in mapped if g]
         if len(valid) != len(set(valid)):
             raise ValueError("CMap gene_info contains a duplicate gene symbol")
         self.genes = mapped
         self.gene_index = {gene: i for i, gene in enumerate(mapped) if gene}
+        self.gene_strata = {alias[gene_id_value]: strata_by_id.get(gene_id_value, "all")
+                            for gene_id_value in self.row_ids if alias.get(gene_id_value)}
 
         sig = read_table(sig_info).copy()
         required = {"sig_id", "pert_id", "pert_iname", "pert_type", "cell_id"}

@@ -51,6 +51,16 @@ class ContinuousStatisticsTests(unittest.TestCase):
         self.assertTrue(np.array_equal(first[1], second[1]))
         self.assertTrue(np.all((first[1] >= .01) & (first[1] <= 1)))
 
+    def test_permutations_shuffle_only_within_prespecified_gene_strata(self):
+        disease = np.array([5, 3, -3, -5], dtype=float)
+        matrix = np.array([-disease], dtype=float)
+        observed, empirical_p, _ = permutation_calibration(
+            matrix, disease, [[0]], permutations=19, seed=3, z_clip=5,
+            strata=np.array(["s1", "s2", "s3", "s4"]),
+        )
+        self.assertTrue(np.allclose(observed, [-1]))
+        self.assertEqual(empirical_p.tolist(), [1])
+
     def test_primary_family_fdr_and_secondary_nonpromotion(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)

@@ -148,3 +148,26 @@ global correction, reversing single-tissue signs while joint z_mean is fixed,
 direction conflicts, joint-gate semantics, all-gene backgrounds, insufficient
 queries, CLI and pipeline resume integrity. These fixtures validate implementation,
 not a completed real AD GWAS-to-drug discovery experiment.
+
+## Four-disease Level 5 primary analysis
+
+The newer four-disease command is separate from the legacy AD tail-overlap/KS screen above:
+
+```bash
+python scripts/run_minimal_four_disease_demo.py --output demo_output/four_disease
+python twas.py four-disease-screen config/drug_screens/four_disease_level5.yaml
+```
+
+It reads GSE92742 Level 5 MODZ in bounded signature blocks and uses all finite TWAS genes shared with
+CMap. TWAS Z is symmetrically clipped at 5 and weighted by `min(|Z|, 5) / 5` in a weighted cosine.
+Negative is reversal. Signatures are aggregated by the median within compound × cell before matched
+gene-label permutations. One BH family per disease covers every compound × primary-cell test. A
+candidate compound must have at least one primary-cell test with global q < .05 and no positive score
+in any tested primary cell; it appears once in the disease candidate table. Secondary cells remain
+separate sensitivity evidence.
+
+The formal configuration fixes 10,000 permutations; finite permutation resolution is reported. The
+minimum demo deliberately uses 999 and synthetic data. It proves I/O, statistics, multiplicity,
+lineage and figure generation, but it does not validate any drug–disease relationship. Real runs must
+retain the original compressed CMap archive/checksums, compute from a decompressed local-scratch GCTX,
+freeze all GWAS accessions and sample-overlap decisions, and retain all generated manifests.

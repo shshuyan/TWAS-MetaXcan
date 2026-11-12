@@ -11,6 +11,8 @@ from matplotlib.patches import FancyBboxPatch
 import numpy as np
 import pandas as pd
 
+from .screen_io import sha256
+
 
 DISEASES = ["AD", "LSC", "atopic_dermatitis", "IPF"]
 LABELS = {"AD": "Alzheimer’s disease", "LSC": "Lichen simplex chronicus",
@@ -161,6 +163,8 @@ def _consistency(frames):
         primary_cells = set(frames[disease]["summary"]["primary_cells"])
         evidence = evidence[evidence.cell_id.isin(primary_cells)]
         if len(evidence):
+            ranked = evidence.groupby("pert_iname").score.median().abs().sort_values(ascending=False).head(10).index
+            evidence = evidence[evidence.pert_iname.isin(ranked)].copy()
             drugs = sorted(evidence.pert_iname.unique())
             for x, drug in enumerate(drugs):
                 values = evidence.loc[evidence.pert_iname == drug, "score"].to_numpy(float)
@@ -202,6 +206,8 @@ def _sensitivity(frames):
         secondary = frames[disease]["secondary"].groupby(["compound_id", "drug"], as_index=False).score.median().rename(columns={"score": "secondary_score"})
         merged = primary.merge(secondary, on=["compound_id", "drug"], how="outer")
         if len(merged):
+            merged["display_priority"] = merged[["primary_score", "secondary_score"]].abs().max(axis=1)
+            merged = merged.sort_values(["display_priority", "compound_id"], ascending=[False, True]).head(10).reset_index(drop=True)
             y = np.arange(len(merged))
             for index, row in merged.iterrows():
                 if pd.notna(row.primary_score) and pd.notna(row.secondary_score):
@@ -249,4 +255,11 @@ def render_figure_suite(batch_output, formats=("png", "svg", "pdf")):
         disclosure = " DEMO / synthetic; software validation only." if demo else ""
         captions.append(f"## Figure {number}\n\n{caption} Statistics are read from the audited result tables; BH-FDR is disease-specific.{disclosure}\n")
     (figure_dir / "figure_captions.md").write_text("\n".join(captions))
+    # Figures are part of the final audit surface, so refresh the batch manifest.
+    manifest = []
+    for path in sorted(batch.rglob("*")):
+        if path.is_file() and path != batch / "output_manifest.json":
+            manifest.append({"role": "output", "file": str(path.relative_to(batch)),
+                             "bytes": path.stat().st_size, "sha256": sha256(path)})
+    (batch / "output_manifest.json").write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n")
     return generated

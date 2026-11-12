@@ -27,8 +27,8 @@ datasets:
   - id: ADERM_GCST90244787
     disease: atopic_dermatitis
     role: primary_gwas
-    url: https://ftp.ebi.ac.uk/pub/databases/gwas/summary_statistics/GCST90244001-GCST90245000/GCST90244787/GCST90244787_buildGRCh37.tsv.gz
-    filename: gwas/atopic_dermatitis/GCST90244787_buildGRCh37.tsv.gz
+    url: https://ftp.ebi.ac.uk/pub/databases/gwas/summary_statistics/GCST90244001-GCST90245000/GCST90244787/GCST90244787_buildGRCh37.tsv
+    filename: gwas/atopic_dermatitis/GCST90244787_buildGRCh37.tsv
     build: GRCh37
     ancestry: European
     sample_size: 864982

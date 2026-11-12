@@ -38,7 +38,7 @@ def _group_medians(values, groups):
     return np.array([np.median(values[group]) for group in groups], dtype=float)
 
 
-def permutation_calibration(matrix, disease_z, groups, permutations, seed, z_clip=5.0):
+def permutation_calibration(matrix, disease_z, groups, permutations, seed, z_clip=5.0, strata=None):
     """Calibrate compound/cell medians against deterministic gene-label permutations."""
     if not isinstance(permutations, int) or permutations < 1:
         raise ValueError("permutations must be a positive integer")
@@ -46,8 +46,14 @@ def permutation_calibration(matrix, disease_z, groups, permutations, seed, z_cli
     observed = _group_medians(observed_individual, groups)
     counts = np.zeros(len(groups), dtype=int)
     rng = np.random.default_rng(seed)
+    strata = np.asarray(["all"] * len(disease_z) if strata is None else strata)
+    if strata.ndim != 1 or len(strata) != len(disease_z):
+        raise ValueError("strata must align one-to-one with disease_z")
+    stratum_indices = [np.flatnonzero(strata == value) for value in np.unique(strata)]
     for _ in range(permutations):
-        permuted = disease_z[rng.permutation(len(disease_z))]
+        permuted = np.asarray(disease_z, dtype=float).copy()
+        for indices in stratum_indices:
+            permuted[indices] = disease_z[indices][rng.permutation(len(indices))]
         null = _group_medians(weighted_cosine_scores(matrix, permuted, z_clip), groups)
         counts += null <= observed + 1e-12
     return observed, (counts + 1) / (permutations + 1), observed_individual
@@ -95,7 +101,7 @@ def screen_disease(config, reference, output):
         "minimum_genes": int(config["minimum_genes"]), "z_clip": float(config["z_clip"]),
         "permutations": int(config["permutations"]), "seed": int(config["seed"]),
         "alpha": float(config["alpha"]), "score": "weighted_cosine; negative is reversal",
-        "null": "gene-label permutation preserving TWAS Z and weight distribution",
+        "null": "gene-label permutation within CMap landmark/inferred strata, preserving TWAS Z and weight distribution",
     }
     if len(twas) < int(config["minimum_genes"]):
         empty = _empty_results()
@@ -122,6 +128,7 @@ def screen_disease(config, reference, output):
     observed, pvalues, individual = permutation_calibration(
         matrix, twas.zscore.to_numpy(float), group_indices,
         int(config["permutations"]), int(config["seed"]), float(config["z_clip"]),
+        strata=np.array([reference.gene_strata[gene] for gene in twas.gene_name]),
     )
     sig = sig.copy()
     sig["score"] = individual

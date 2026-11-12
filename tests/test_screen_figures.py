@@ -30,6 +30,10 @@ class ScreenFigureTests(unittest.TestCase):
             self.assertIn("BH-FDR", captions)
             candidate_svg = (batch / "figures" / "figure_07_cross_disease_candidates.svg").read_text()
             self.assertEqual(candidate_svg.count("Median primary-cell score"), 1)
+            consistency = pd.read_csv(batch / "figures" / "figure_06_condition_consistency.data.tsv", sep="\t")
+            sensitivity = pd.read_csv(batch / "figures" / "figure_08_context_sensitivity.data.tsv", sep="\t")
+            self.assertLessEqual(consistency.groupby("disease").pert_id.nunique().max(), 10)
+            self.assertLessEqual(sensitivity.groupby("disease").compound_id.nunique().max(), 10)
 
     def test_empty_candidate_table_renders_an_explicit_no_data_panel(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -52,6 +56,34 @@ class ScreenFigureTests(unittest.TestCase):
                 warnings.simplefilter("always")
                 render_figure_suite(batch, formats=("pdf",))
             self.assertEqual([str(item.message) for item in caught if issubclass(item.category, DeprecationWarning)], [])
+
+    def test_dense_panels_limit_displayed_compounds_but_keep_tidy_sidecars(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            batch = run_four_disease_screen(batch_fixture(root))
+            for disease in ["AD", "LSC", "atopic_dermatitis", "IPF"]:
+                disease_root = batch / disease
+                for filename, id_column, name_column in [
+                    ("signature_evidence.tsv.gz", "pert_id", "pert_iname"),
+                    ("all_primary_tests.tsv", "compound_id", "drug"),
+                    ("secondary_contexts.tsv", "compound_id", "drug"),
+                ]:
+                    path = disease_root / filename
+                    base = pd.read_csv(path, sep="\t")
+                    copies = []
+                    for index in range(12):
+                        copy = base.copy()
+                        copy[id_column] = copy[id_column].astype(str) + f"_{index:02}"
+                        copy[name_column] = copy[name_column].astype(str) + f"_{index:02}"
+                        copies.append(copy)
+                    pd.concat(copies, ignore_index=True).to_csv(path, sep="\t", index=False)
+
+            render_figure_suite(batch, formats=("svg",))
+
+            consistency = pd.read_csv(batch / "figures" / "figure_06_condition_consistency.data.tsv", sep="\t")
+            sensitivity = pd.read_csv(batch / "figures" / "figure_08_context_sensitivity.data.tsv", sep="\t")
+            self.assertLessEqual(consistency.groupby("disease").pert_id.nunique().max(), 10)
+            self.assertLessEqual(sensitivity.groupby("disease").compound_id.nunique().max(), 10)
 
 
 if __name__ == "__main__":

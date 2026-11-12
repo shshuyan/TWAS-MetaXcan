@@ -14,3 +14,5 @@ config/drug_screens/local*.yaml
 results/local_drug_screens/
 config/traits/local*.yaml
 results/*/drug_screen*/
+demo_output/
+results/four_disease_cmap_level5/
