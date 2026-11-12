@@ -1,0 +1,37 @@
+schema_version: 1
+input_kind: real_twas
+output: ${root}/results/four_disease_cmap_level5
+analysis:
+  z_clip: 5
+  minimum_genes: 20
+  permutations: 10000
+  seed: 20261112
+  alpha: 0.05
+cmap:
+  # Decompress the official .gctx.gz into local scratch before random-access screening.
+  gctx: ${root}/work/cmap/GSE92742_Broad_LINCS_Level5_COMPZ.MODZ_n473647x12328.gctx
+  sig_info: ${root}/work/cmap/GSE92742_Broad_LINCS_sig_info.txt.gz
+  gene_info: ${root}/work/cmap/GSE92742_Broad_LINCS_gene_info.txt.gz
+  pert_info: ${root}/work/cmap/GSE92742_Broad_LINCS_pert_info.txt.gz
+  cells: [NEU, NPC, SHSY5Y, MCH58, A375, SKMEL1, SKMEL28, HCC515, A549, SKLU1]
+diseases:
+  - disease: AD
+    twas: ${root}/results/AD_Bellenguez2022/spredixcan_eqtl_all.tsv.gz
+    tissue: Brain_Cortex
+    primary_cells: [NEU, NPC]
+    secondary_cells: [SHSY5Y]
+  - disease: LSC
+    twas: ${root}/results/LSC_FinnGen_R12/spredixcan_eqtl_all.tsv.gz
+    tissue: Skin_Not_Sun_Exposed_Suprapubic
+    primary_cells: [MCH58]
+    secondary_cells: [A375, SKMEL1, SKMEL28]
+  - disease: atopic_dermatitis
+    twas: ${root}/results/AtopicDermatitis_GCST90244787/spredixcan_eqtl_all.tsv.gz
+    tissue: Skin_Not_Sun_Exposed_Suprapubic
+    primary_cells: [MCH58]
+    secondary_cells: [A375, SKMEL1, SKMEL28]
+  - disease: IPF
+    twas: ${root}/results/IPF_primary/spredixcan_eqtl_all.tsv.gz
+    tissue: Lung
+    primary_cells: [HCC515]
+    secondary_cells: [A549, SKLU1]

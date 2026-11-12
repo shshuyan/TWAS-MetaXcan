@@ -149,7 +149,23 @@ def screen_disease(config, reference, output):
     secondary = results[~results.primary_context].copy().reset_index(drop=True)
     primary = primary.sort_values(["q_bh_primary_family", "score", "compound_id"]).reset_index(drop=True)
     secondary = secondary.sort_values(["empirical_p", "score", "compound_id"]).reset_index(drop=True)
-    candidates = primary[primary.candidate].copy().reset_index(drop=True)
+    candidate_rows = []
+    for compound, frame in primary.groupby("compound_id", sort=True):
+        supported = frame.candidate
+        # A compound appears once: at least one prespecified primary context must pass,
+        # and no tested primary context may point in the disease-mimicking direction.
+        if supported.any() and (frame.score < 0).all():
+            candidate_rows.append({
+                "compound_id": compound, "drug": frame.drug.iloc[0],
+                "primary_cells_tested": len(frame), "primary_cells_supported": int(supported.sum()),
+                "median_primary_score": float(frame.score.median()),
+                "best_q_bh_primary_family": float(frame.q_bh_primary_family.min()),
+                "worst_primary_score": float(frame.score.max()),
+            })
+    candidates = pd.DataFrame(candidate_rows, columns=[
+        "compound_id", "drug", "primary_cells_tested", "primary_cells_supported",
+        "median_primary_score", "best_q_bh_primary_family", "worst_primary_score",
+    ]).sort_values(["best_q_bh_primary_family", "median_primary_score", "compound_id"]).reset_index(drop=True)
     candidates.insert(0, "candidate_rank", np.arange(1, len(candidates) + 1))
     _write_table(output / "all_primary_tests.tsv", primary)
     _write_table(output / "secondary_contexts.tsv", secondary)

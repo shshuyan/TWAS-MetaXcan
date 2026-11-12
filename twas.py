@@ -37,6 +37,9 @@ def main():
     ds.add_argument("--list", action="store_true", help="list entries without downloading")
     ds.add_argument("--output", help="snapshot directory")
     ds.add_argument("--select", nargs="+", help="dataset IDs to download")
+    fd = sub.add_parser("four-disease-screen", help="run independent AD, LSC, atopic dermatitis and IPF Level 5 screens")
+    fd.add_argument("config", help="four-disease Level 5 YAML")
+    fd.add_argument("--output", help="new batch output directory")
     d = sub.add_parser("drug-screen", help="discover compounds from signed TWAS results across LINCS/CMap; no shortlist/GEO required")
     d.add_argument("config", help="TWAS drug-screen YAML; paths relative to this file")
     d.add_argument("--output", help="new output directory; must not already exist")
@@ -58,6 +61,10 @@ def main():
         if not a.output:
             ap.error("datasets requires --output unless --list is used")
         print("Dataset snapshot:", download_snapshot(registry, a.output, a.select))
+        return
+    if a.cmd == "four-disease-screen":
+        from twaslib.four_disease_screen import run_four_disease_screen
+        print("Four-disease screen:", run_four_disease_screen(a.config, a.output))
         return
     if a.cmd == "presets":
         for k, v in PRESETS.items():
